@@ -1,0 +1,30 @@
+---
+CompileFlags:
+  Add: [
+    -Wall,
+    -Wpedantic,
+    -Wextra,
+    -Wno-empty-translation-unit,
+    -DDEBUG,
+    -m64,
+  ]
+Diagnostics:
+  UnusedIncludes: Strict
+  Includes:
+    IgnoreHeader: [ "(nwge/)?engine\\.hpp", "(nwge/)?main\\.hpp" ]
+---
+If:
+  PathMatch: .*\.[ch]
+CompileFlags:
+  Add: [
+    -xc,
+    -std=c11,
+  ]
+---
+If:
+  PathMatch: .*\.[ch]pp
+CompileFlags:
+  Add: [
+    -xc++,
+    -std=c++23,
+  ]

@@ -1,0 +1,18 @@
+[build]
+src = "source"
+obj = "target/build"
+out = "target"
+bip = "3.0+"
+
+[build.c]
+std = "c11"
+hide-symbols = true
+
+[build.cpp]
+std = "c++23"
+hide-symbols = true
+
+[game]
+exe = "game"
+lang = "cpp"
+libs = [ "nwge", "SDL2" ]
