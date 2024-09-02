@@ -31,8 +31,27 @@ public:
     mBundle
       .load({"sigmoid.bndl"_sv})
       .nqFont("INTER.CFN"_sv, mFont);
-    mGame.bundle()
-      .nqTexture("LOGO.PNG"_sv, mLogo);
+
+    mHasLogo = !mGame.logo().empty();
+    if(mHasLogo) {
+      mGame.bundle().nqTexture(mGame.logo(), mLogo);
+    }
+
+    mHasBackground = !mGame.menuBackground().empty();
+    if(mHasBackground) {
+      mGame.bundle().nqTexture(mGame.menuBackground(), mBackground);
+    }
+    return true;
+  }
+
+  bool init() override {
+    if(mHasLogo) {
+      glm::ivec2 logoSize = mLogo.size();
+      mLogoExtents = {
+        cLogoH*f32(logoSize.x)/f32(logoSize.y),
+        cLogoH
+      };
+    }
     return true;
   }
 
@@ -65,13 +84,23 @@ public:
 
   void render() const override {
     render::clear({0, 0, 0});
-    render::color(cBackgroundColor);
-    m4x3.rect({
-      cBackgroundPos, cBackgroundExtents
-    }).draw();
-    render::color();
+    if(mHasBackground) {
+      m4x3.rect({
+        cBackgroundPos, cBackgroundExtents, mBackground.id
+      }).draw();
+    } else {
+      render::color(cBackgroundColor);
+      m4x3.rect({
+        cBackgroundPos, cBackgroundExtents
+      }).draw();
+      render::color();
+    }
 
-    drawRect(cLogoPos, cLogoExtents, mLogo);
+    if(mHasLogo) {
+      drawRect(cLogoPos, mLogoExtents, mLogo);
+    } else {
+      mFont.draw(mGame.title(), cLogoPos, cBigText);
+    }
 
     drawButton(ButtonNew, "New Game"_sv);
     drawButton(ButtonLoad, "Load Game"_sv);
@@ -109,13 +138,18 @@ private:
     mFont.draw(text, m4x3.pos(pos), height);
   }
 
+  bool mHasBackground = false;
+  render::Texture mBackground;
   static constexpr glm::vec3 cBackgroundPos{0, 0, 0.9f};
   static constexpr glm::vec2 cBackgroundExtents{1, 1};
   static constexpr glm::vec3 cBackgroundColor{0.1f, 0.1f, 0.1f};
 
+  bool mHasLogo = false;
   render::Texture mLogo;
   static constexpr glm::vec3 cLogoPos{0.1f, 0.1f, 0.5f};
-  static constexpr glm::vec2 cLogoExtents{3*0.15f, 0.15f};
+  static constexpr f32 cLogoH = 0.15f;
+  static constexpr glm::vec2 cDefaultLogoExtents{3*cLogoH, cLogoH};
+  glm::vec2 mLogoExtents = cDefaultLogoExtents;
 
   MenuButton mHover = ButtonInvalid;
   MenuButton mSelection = ButtonInvalid;
@@ -123,12 +157,12 @@ private:
   static constexpr f32 cBigText = 0.05f;
   static constexpr f32 cButtonPadding = 0.01f;
   static constexpr glm::vec2 cButtonExtents{
-    cLogoExtents.x,
+    cDefaultLogoExtents.x,
     cBigText + 2*cButtonPadding
   };
   static constexpr glm::vec3 cButtonAnchor{
     cLogoPos.x,
-    cLogoPos.y + cLogoExtents.y + cButtonExtents.y,
+    cLogoPos.y + cDefaultLogoExtents.y + cButtonExtents.y,
     0.5f
   };
   static constexpr f32 cButtonTextZOffset = -0.1f;

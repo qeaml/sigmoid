@@ -41,6 +41,16 @@ public:
   }
 
   [[nodiscard]]
+  inline nwge::StringView logo() const {
+    return mLogo;
+  }
+
+  [[nodiscard]]
+  inline nwge::StringView menuBackground() const {
+    return mMenuBackground;
+  }
+
+  [[nodiscard]]
   inline nwge::StringView startScene() const {
     return mStartScene;
   }
@@ -59,6 +69,8 @@ private:
   nwge::String<> mAuthor;
   nwge::String<> mDescription;
   nwge::String<> mVersion;
+  nwge::String<> mLogo;           // -> filename of logo graphic, can be empty
+  nwge::String<> mMenuBackground; // -> menu background graphic, can be empty
   nwge::String<> mStartScene;
   nwge::data::Bundle mBundle;
 };

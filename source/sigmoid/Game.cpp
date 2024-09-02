@@ -118,6 +118,36 @@ bool Game::load(data::RW &file) {
     mVersion = versionVal->string();
   }
 
+  const auto *logoVal = obj.get("logo"_sv);
+  if(logoVal == nullptr) {
+    dialog::warning("Warning",
+      "Could not find logo in GAME.INFO, fallback will be used.");
+  } else {
+    if(!logoVal->isString()) {
+      dialog::error("Failure"_sv,
+        "Could not parse GAME.INFO for {}:\n"
+        "Expected string for logo.",
+        mName);
+      return false;
+    }
+    mLogo = logoVal->string();
+  }
+
+  const auto *menuBackgroundVal = obj.get("menu_background"_sv);
+  if(menuBackgroundVal == nullptr) {
+    dialog::warning("Warning",
+      "Could not find menu_background in GAME.INFO, fallback will be used.");
+  } else {
+    if(!menuBackgroundVal->isString()) {
+      dialog::error("Failure"_sv,
+        "Could not parse GAME.INFO for {}:\n"
+        "Expected string for menu_background.",
+        mName);
+      return false;
+    }
+    mMenuBackground = menuBackgroundVal->string();
+  }
+
   const auto *startSceneVal = obj.get("start_scene"_sv);
   if(startSceneVal == nullptr) {
     dialog::error("Failure",
