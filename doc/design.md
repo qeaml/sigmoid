@@ -27,8 +27,9 @@ A scene file is a JSON object that contains the following fields:
 
 * `title`: A title for this scene.
 * `background`: The background image for this scene.
-* `music`: The music to play for this scene.
-* `next`: The name of the scene to go to next.
+* `music`: The music to play for this scene. If missing, no music is played.
+* `next`: The name of the scene to go to next. If missing, the game will
+  end.
 * `type`: The type of scene. Can be either `field` or `story`.
 * Additional fields for each scene type.
 
@@ -51,27 +52,53 @@ A `TileSpan` is a JSON array consisting of four elements:
 
 ### Story scene
 
+A story scene's `actors` field is an object containing `Actor` definitions for
+use with `Command`s.
+
 A story scene's `commands` field is a list of `Command`s to execute.
+
+#### `Actor`
+
+An `Actor` is a JSON object containing the following fields:
+
+* `name`: The name of the actor shown to the player.
+* `sheet`: The sprite sheet for the actor's portrait.
+* `sprites`: Defines the amount of sprites for the actor in columns and rows.
 
 #### `Command`
 
-A `Command` is a JSON array consisting of two elements:
+A `Command` is a JSON object consisting of one field:
 
-* The first element is the type of command.
-* The second element is the data for the command.
+* The field name is a command.
+* The field value is the data for the command.
 
 The following are the types of commands and their data:
 
-* `speak`: Causes a character to speak.
+* `speak`: Causes an actor to speak.
   - `text`: The text to speak.
-  - `character`: The character to speak.
-  - `portrait`: The portrait to use.
+  - `actor`: The actor to speak. If missing, assume previously spoken actor.
+  - `portrait`: The portrait to use. If missing, assume previously used
+    portrait, only if `actor` is also missing.
 * `background`: Changes the background.
-  - `image`: The image to use.
-  - `music`: The music to play.
+  - `image`: The image to use. Empty string to remove the background. If
+    missing, does not change the background.
+  - `music`: The music to play. Empty string to stop the music. If missing, does
+    not change the music.
 * `sprite`: Changes a sprite.
   - `id`: The ID of the sprite.
-  - `image`: The image to use or `null` to remove the sprite.
+  - `actor`: The actor whose sprite sheet to use. If missing, do not change the
+    sprite's actor.
+  - `portrait`: Which portrait from the actor's sprite sheet to use. If missing,
+    do not change the sprite's portrait.
+  - `hide`: Whether to hide the sprite. A `sprite` command with `hide: false`
+    must be issued at least once to show the sprite. If a `hide: false` command
+    is issues and `actor` or `portrait` are missing and the sprite has not been
+    assigned an actor & portrait, the sprite will be hidden. In such scenario, a
+    warning is issues to the engine console.
+  - `pos`: The position to place the sprite. If missing, do not change the
+    sprite's position. Sprites default to the center of the screen.
+  - `size`: The size to scale the sprite to. If missing, do not change the
+    sprite's size. Sprites must have a size set before they can be shown.
 * `wait`: Waits for a certain amount of time.
   - `time`: The amount of time to wait in seconds.
 

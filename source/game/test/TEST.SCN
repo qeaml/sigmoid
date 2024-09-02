@@ -1,4 +1,54 @@
 {
   "title": "The Testing Scene",
-  "type": "story"
+  "type": "story",
+  "background": "LAB.PNG",
+  "actors": {
+    "tester": {
+      "name": "Tester",
+      "sheet": "TESTER.PNG",
+      "sprites": [2, 2]
+    }
+  },
+  "commands": [
+    {"sprite": {
+      "id": "tester",
+      "actor": "tester",
+      "portrait": [0, 0],
+      "pos": [0.3, 0.6],
+      "size": [0.05, 0.05]
+    }},
+    {"speak": {
+      "actor": "tester",
+      "text": "This is a test of the scene system.",
+      "portrait": [0, 0]
+    }},
+    {"sprite": {
+      "id": "tester",
+      "portrait": [0, 1]
+    }},
+    {"speak": {
+      "text": "This is some more dialogue.",
+      "portrait": [0, 1]
+    }},
+    {"wait": {"time": 1.0}},
+    {"sprite": {
+      "id": "tester",
+      "portrait": [1, 0]
+    }},
+    {"speak": {
+      "text": "You have waited for one second.",
+      "portrait": [1, 0]
+    }},
+    {"background": {
+      "image": "OUTSIDE.PNG"
+    }},
+    {"sprite": {
+      "id": "tester",
+      "portrait": [0, 1]
+    }},
+    {"speak": {
+      "text": "A change of scenery.",
+      "portrait": [0, 1]
+    }}
+  ]
 }
