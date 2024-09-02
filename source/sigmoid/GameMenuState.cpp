@@ -99,7 +99,7 @@ public:
     if(mHasLogo) {
       drawRect(cLogoPos, mLogoExtents, mLogo);
     } else {
-      mFont.draw(mGame.title(), cLogoPos, cBigText);
+      drawText(mGame.title(), cLogoPos, cBigText);
     }
 
     drawButton(ButtonNew, "New Game"_sv);

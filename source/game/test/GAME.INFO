@@ -3,7 +3,6 @@
   "author": "Nwge Game Studio",
   "description": "A game for testing the game engine.",
   "version": "0.1",
-  "logo": "LOGO.PNG",
   "menu_background": "BACK.PNG",
   "start_scene": "TEST"
 }
