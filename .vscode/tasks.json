@@ -1,0 +1,57 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Debug Build",
+      "type": "shell",
+      "command": "bip build",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Release Build",
+      "type": "shell",
+      "command": "bip build -r",
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "label": "Clean",
+      "type": "shell",
+      "command": "bip clean",
+    },
+    {
+      "label": "Clean (Release)",
+      "type": "shell",
+      "command": "bip clean -r",
+    },
+    {
+      "label": "Clean then Debug Build",
+      "group": {
+        "kind": "build"
+      },
+      "dependsOn": [
+        "Clean",
+        "Debug Build"
+      ],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Clean then Release Build",
+      "group": {
+        "kind": "build"
+      },
+      "dependsOn": [
+        "Clean (Release)",
+        "Release Build"
+      ],
+      "dependsOrder": "sequence"
+    }
+  ]
+}

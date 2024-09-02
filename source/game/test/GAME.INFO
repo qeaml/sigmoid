@@ -1,0 +1,7 @@
+{
+  "title": "The Testing Game",
+  "author": "Nwge Game Studio",
+  "description": "A game for testing the game engine.",
+  "version": "0.1",
+  "start_scene": "TEST"
+}

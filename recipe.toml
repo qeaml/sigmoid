@@ -9,10 +9,20 @@ std = "c11"
 hide-symbols = true
 
 [build.cpp]
-std = "c++23"
+std = "c++20"
 hide-symbols = true
 
-[game]
-exe = "game"
+[data]
+plug = "bndl"
+src = "source/data"
+out = "target/sigmoid.bndl"
+
+[sigmoid]
+exe = "sigmoid"
 lang = "cpp"
-libs = [ "nwge", "SDL2" ]
+dyn-libs = [ "nwge", "nwge_cli", "SDL2" ]
+
+[test_game]
+plug = "bndl"
+src = "source/game/test"
+out = "target/games/test.bndl"
