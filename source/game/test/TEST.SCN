@@ -12,6 +12,7 @@
   "commands": [
     {"sprite": {
       "id": "tester",
+      "hide": false,
       "actor": "tester",
       "portrait": [0, 0],
       "pos": [0.3, 0.6],

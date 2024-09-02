@@ -132,6 +132,10 @@ bool Scene::load(data::RW &file) {
     mType = SceneField;
   } else if(type.equalsIgnoreCase("story"_sv)) {
     mType = SceneStory;
+    mStory.emplace();
+    if(!mStory->load(obj)) {
+      return false;
+    }
   } else {
     dialog::error("Failure"_sv,
       "Could not parse scene {}:\n"

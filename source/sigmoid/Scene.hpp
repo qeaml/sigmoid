@@ -6,6 +6,7 @@ Scene.hpp
 Scene definition
 */
 
+#include "StoryScene.hpp"
 #include <nwge/common/string.hpp>
 #include <nwge/data/bundle.hpp>
 
@@ -67,6 +68,7 @@ private:
   nwge::String<> mMusic;
   nwge::String<> mNext;
   SceneType mType = SceneInvalid;
+  nwge::Maybe<StoryScene> mStory;
 };
 
 } // namespace sigmoid
