@@ -13,13 +13,15 @@ other visuals, similar to a visual novel.
 
 ## Game info
 
-The `INFO.JSON` file contains the following fields:
+The `GAME.INFO` file contains the following fields:
 
 * `title`: The title of the game.
 * `author`: The author of the game.
 * `description`: A description of the game.
 * `version`: The version of the game.
 * `start_scene`: The name of the scene to start the game in.
+* `logo`: The logo of the game.
+* `menu_background`: The menu background of the game.
 
 ## Scene file
 
