@@ -119,10 +119,7 @@ bool Game::load(data::RW &file) {
   }
 
   const auto *logoVal = obj.get("logo"_sv);
-  if(logoVal == nullptr) {
-    dialog::warning("Warning",
-      "Could not find logo in GAME.INFO, fallback will be used.");
-  } else {
+  if(logoVal != nullptr) {
     if(!logoVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
@@ -134,10 +131,7 @@ bool Game::load(data::RW &file) {
   }
 
   const auto *menuBackgroundVal = obj.get("menu_background"_sv);
-  if(menuBackgroundVal == nullptr) {
-    dialog::warning("Warning",
-      "Could not find menu_background in GAME.INFO, fallback will be used.");
-  } else {
+  if(menuBackgroundVal != nullptr) {
     if(!menuBackgroundVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
