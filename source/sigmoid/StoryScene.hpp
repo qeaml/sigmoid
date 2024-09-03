@@ -108,12 +108,16 @@ struct StoryScene {
   nwge::Array<Actor> actors;
   nwge::Array<Sprite> sprites;
   nwge::Array<Command> commands;
+  nwge::Array<nwge::String<>> bgImages;
+  nwge::Array<nwge::String<>> musicTracks;
 
   bool load(const nwge::json::Object &data);
 
 private:
   bool loadActors(const nwge::json::Object &data);
   bool loadSprites(const nwge::ArrayView<nwge::json::Value> &commandData);
+  bool loadBackgrounds(const nwge::ArrayView<nwge::json::Value> &data);
+  bool loadMusicTracks(const nwge::ArrayView<nwge::json::Value> &data);
   bool loadCommands(const nwge::ArrayView<nwge::json::Value> &data);
 };
 

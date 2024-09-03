@@ -25,6 +25,8 @@ bool StoryScene::load(const json::Object &data) {
   const auto *commandsVal = data.get("commands"_sv);
   FAIL_IF(commandsVal == nullptr, "No `commands` field.");
   FAIL_IF(!commandsVal->isArray(), "Expected array for commands.");
+  FAIL_IF(!loadSprites(commandsVal->array()), "Could not parse `commands`.");
+  FAIL_IF(!loadBackgrounds(commandsVal->array()), "Could not parse `commands`.");
   FAIL_IF(!loadCommands(commandsVal->array()), "Could not parse `commands`.");
 
   return true;
@@ -114,6 +116,62 @@ bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
   }
 
   sprites = spriteData.view();
+  return true;
+
+  #undef FAIL_HEADER
+}
+
+bool StoryScene::loadBackgrounds(const ArrayView<json::Value> &commandData) {
+  #define FAIL_HEADER "Could not parse story scene backgrounds"
+
+  Slice<const json::Object*> backgroundCommands{actors.size()};
+  for(const auto &val: commandData) {
+    FAIL_IF(!val.isObject(), "Expected object for command.");
+    const auto &obj = val.object();
+    const auto *backgroundVal = obj.get("background"_sv);
+    if(backgroundVal == nullptr) {
+      continue;
+    }
+    FAIL_IF(!backgroundVal->isObject(), "Expected object for background command.");
+    const auto &spriteObj = backgroundVal->object();
+    backgroundCommands.push(&spriteObj);
+  }
+
+  Slice<StringView> backgroundNames{backgroundCommands.size()};
+  Slice<StringView> musicTrackNames{backgroundCommands.size()};
+  for(const auto *command: backgroundCommands) {
+    const auto *imageVal = command->get("image"_sv);
+    if(imageVal != nullptr) {
+      FAIL_IF(!imageVal->isString(), "Expected string for background image.");
+      for(auto &name: backgroundNames) {
+        if(name == imageVal->string()) {
+          goto tryMusic;
+        }
+      }
+      backgroundNames.push(imageVal->string());
+    }
+    tryMusic:
+    const auto *musicVal = command->get("music"_sv);
+    if(musicVal != nullptr) {
+      FAIL_IF(!musicVal->isString(), "Expected string for background music.");
+      for(auto &name: musicTrackNames) {
+        if(name == musicVal->string()) {
+          goto next;
+        }
+      }
+      musicTrackNames.push(musicVal->string());
+    }
+    next:;
+  }
+
+  bgImages = {backgroundNames.size()};
+  for(usize i = 0; i < bgImages.size(); ++i) {
+    bgImages[i] = {backgroundNames[i]};
+  }
+  musicTracks = {musicTrackNames.size()};
+  for(usize i = 0; i < musicTracks.size(); ++i) {
+    musicTracks[i] = {musicTrackNames[i]};
+  }
   return true;
 
   #undef FAIL_HEADER
@@ -281,8 +339,61 @@ bool SpeakCommand::load(const struct StoryScene &scene, const json::Object &data
   #undef FAIL_HEADER
 }
 
-// TODO:
-//  * WaitCommand::load
-//  * BackgroundCommand::load
+bool WaitCommand::load(const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene wait command"
+
+  const auto *time = data.get("time"_sv);
+  FAIL_IF(time == nullptr, "Could not find time for wait command.");
+  FAIL_IF(!time->isNumber(), "Expected number for time.");
+  duration = f32(time->number());
+
+  return true;
+
+  #undef FAIL_HEADER
+}
+
+bool BackgroundCommand::load(const StoryScene &scene, const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene background command"
+
+  const auto *imageVal = data.get("image"_sv);
+  if(imageVal != nullptr) {
+    FAIL_IF(imageVal == nullptr, "Could not find image for background command.");
+    FAIL_IF(!imageVal->isString(), "Expected string for image.");
+    const auto &imageName = imageVal->string();
+    if(imageName.empty()) {
+      removeBackground = true;
+    } else {
+      for(image = 0; image < scene.bgImages.size(); ++image) {
+        if(scene.bgImages[image].view() == imageName) {
+          break;
+        }
+      }
+    }
+    FAIL_IF(image == scene.bgImages.size(),
+      "Could not find background with id {}.", imageName);
+  }
+
+  const auto *musicVal = data.get("music"_sv);
+  if(musicVal != nullptr) {
+    FAIL_IF(musicVal == nullptr, "Could not find music for background command.");
+    FAIL_IF(!musicVal->isString(), "Expected string for music.");
+    const auto &musicName = musicVal->string();
+    if(musicName.empty()) {
+      stopMusic = true;
+    } else {
+      for(music = 0; music < scene.musicTracks.size(); ++music) {
+        if(scene.musicTracks[music].view() == musicName) {
+          break;
+        }
+      }
+    }
+    FAIL_IF(music == scene.musicTracks.size(),
+      "Could not find music with id {}.", musicName);
+  }
+
+  return true;
+
+  #undef FAIL_HEADER
+}
 
 } // namespace sigmoid
