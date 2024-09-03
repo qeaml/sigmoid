@@ -30,12 +30,23 @@ public:
   }
 
   bool tick(f32 delta) override {
+    if(!mCurrentText.empty()) {
+      if(mTextChars < mCurrentText.size()) {
+        mTextTimer += delta;
+        if(mTextTimer >= cTextCharTime) {
+          mTextChars++;
+          mTextTimer = 0.0f;
+        }
+        return true;
+      }
+    }
     if(mCommandOff >= mStory.commands.size()) {
       dialog::info("StorySceneSubState"_sv, "Finished."_sv);
       return false;
     }
     if(!mWaitForInput) {
       nextCommand();
+      return true;
     }
     return true;
   }
@@ -50,7 +61,9 @@ public:
       }).draw();
     }
 
-    render::color();
+    if(!mCurrentText.empty()) {
+      renderTextBox();
+    }
   }
 
 private:
@@ -117,10 +130,77 @@ private:
     }
   }
 
+  usize mCurrentActor = 0; // only matters if !mCurrentText.empty()
+  usize mActorPortrait = 0;
+  StringView mCurrentText;
+  usize mTextChars = 0;
+  f32 mTextTimer = 0.0f;
+
   void speakCmd(const SpeakCommand &cmd) {
+    if(cmd.actor >= 0) {
+      mCurrentActor = cmd.actor;
+    }
+    if(cmd.portrait >= 0) {
+      mActorPortrait = cmd.portrait;
+    }
+    mCurrentText = cmd.text;
+    mTextChars = 0;
+    mTextTimer = 0.0f;
     mWaitForInput = true;
-    console::print("{}: {}",
-      mActors[cmd.actor].name, cmd.text);
+  }
+
+  static constexpr f32 cTextCharTime = 0.05f;
+
+  static constexpr glm::vec4 cBgColor{0, 0, 0, 0.5f};
+  static constexpr f32 cTextMargin = 0.01f;
+  static constexpr f32 cBaseY = 0.75f;
+  static constexpr f32 cActorNameTextHeight = 0.05f;
+  static constexpr glm::vec3 cActorNameBgPos{0.05f, cBaseY, 0.51f};
+  static constexpr f32 cActorNameBgHeight = cActorNameTextHeight + 2*cTextMargin;
+  static constexpr glm::vec3 cActorNameUnderlineStart{
+    cActorNameBgPos.x, cActorNameBgPos.y + cActorNameBgHeight, 0.50f
+  };
+  static constexpr glm::vec3 cActorNameTextPos{
+    cActorNameBgPos.x + cTextMargin, cActorNameBgPos.y + cTextMargin, 0.50f
+  };
+  static constexpr glm::vec3 cTextBgPos{
+    0.05f, cActorNameBgPos.y + cActorNameBgHeight, 0.51f
+  };
+  static constexpr f32 cTextHeight = 0.05f;
+  static constexpr glm::vec2 cTextBgSize{0.9f, 3*cTextMargin + 2*cTextHeight};
+  static constexpr glm::vec3 cTextPos{
+    cTextBgPos.x+cTextMargin, cTextBgPos.y+cTextMargin, 0.5f
+  };
+
+  void renderTextBox() const {
+    const auto &name = mActors[mCurrentActor].name;
+    auto measure = mData.font.measure(name, cActorNameTextHeight);
+    glm::vec2 nameBgSize{
+      measure.x + 2*cTextMargin, cActorNameBgHeight
+    };
+    render::color(cBgColor);
+    render::rect(
+      m4x3.pos(cActorNameBgPos),
+      nameBgSize
+    );
+    renderRect(cActorNameBgPos, nameBgSize);
+    renderRect(cTextBgPos, cTextBgSize);
+    render::color();
+    render::line(
+      m4x3.pos(cActorNameUnderlineStart),
+      m4x3.pos(cActorNameUnderlineStart) + glm::vec3{nameBgSize.x, 0, 0},
+      1
+    );
+    renderText(mActors[mCurrentActor].name, cActorNameTextPos, cActorNameTextHeight);
+    renderText(mCurrentText.sub(0, mTextChars), cTextPos, cTextHeight);
+  }
+
+  constexpr inline void renderRect(glm::vec3 pos, glm::vec2 extents) const {
+    render::rect(m4x3.pos(pos), m1x1.size(extents));
+  }
+
+  constexpr inline void renderText(const StringView &text, glm::vec3 pos, f32 size) const {
+    mData.font.draw(text, m4x3.pos(pos), size);
   }
 
   usize mCommandOff = 0;
@@ -149,7 +229,8 @@ private:
   }
 
   KeyBind mBindNext{"story.next"_sv, Key::Space, [this]{
-    if(mWaitForInput) {
+    if(mWaitForInput && mTextChars >= mCurrentText.size()) {
+      mCurrentText = {};
       nextCommand();
     }
   }};
