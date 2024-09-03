@@ -59,6 +59,13 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
   FAIL_IF(!nameVal->isString(), "Expected string for `name`.", actorID);
   name = nameVal->string();
 
+  const auto *sheetVal = data.get("sheet"_sv);
+  FAIL_IF(sheetVal == nullptr, "No `sheet` field.", actorID);
+  FAIL_IF(!sheetVal->isString(), "Expected string for `sheet`.", actorID);
+  FAIL_IF(sheetVal->string().empty(),
+    "Expected non-empty string for `sheet`.", actorID);
+  sheet = sheetVal->string();
+
   const auto *spritesVal = data.get("sprites"_sv);
   FAIL_IF(spritesVal == nullptr, "No `sprites` field.", actorID);
   FAIL_IF(!spritesVal->isArray(), "Expected array for `sprites`.", actorID);
@@ -71,13 +78,6 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
   auto width = s32(xVal.number());
   auto height = s32(yVal.number());
   sheetSize = {width, height};
-  sprites = {usize(width * height)};
-  for(usize i = 0; i < sprites.size(); ++i) {
-    sprites[i] = render::TexCoord{
-      {f32(i % width) / f32(width), f32(usize(i / width)) / f32(height)},
-      {1.0f / f32(width), 1.0f / f32(height)},
-    };
-  }
 
   return true;
 

@@ -28,10 +28,8 @@ namespace sigmoid {
 struct Actor {
   nwge::String<> id;
   nwge::String<> name;
-  nwge::String<> sheetName;
-  nwge::render::Texture sheet;
+  nwge::String<> sheet;
   glm::ivec2 sheetSize;
-  nwge::Array<nwge::render::TexCoord> sprites;
 
   bool load(const nwge::StringView &actorID, const nwge::json::Object &data);
 };
