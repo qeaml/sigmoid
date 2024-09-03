@@ -78,7 +78,7 @@ struct SpeakCommand {
   ssize actor = -1;
   ssize portrait = -1;
 
-  bool load(const nwge::json::Object &data);
+  bool load(const struct StoryScene &scene, const nwge::json::Object &data);
 };
 
 struct WaitCommand {
@@ -93,7 +93,7 @@ struct BackgroundCommand {
   ssize image = -1;
   ssize music = -1;
 
-  bool load(const nwge::json::Object &data);
+  bool load(const struct StoryScene &scene, const nwge::json::Object &data);
 };
 
 struct Command {

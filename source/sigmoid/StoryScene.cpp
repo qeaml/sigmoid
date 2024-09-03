@@ -5,132 +5,67 @@ using namespace nwge;
 
 namespace sigmoid {
 
+#define FAIL(...) \
+  dialog::error("Failure"_sv, FAIL_HEADER ":\n" __VA_ARGS__); \
+  return false;
+
+#define FAIL_IF(cond, ...) \
+  if(cond) {\
+    FAIL(__VA_ARGS__);\
+  }
+
 bool StoryScene::load(const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene"
+
   const auto *actorsVal = data.get("actors"_sv);
-  if(actorsVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene:\n"
-      "Could not find actors.");
-    return false;
-  }
-  if(!actorsVal->isObject()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene:\n"
-      "Expected object for actors.");
-    return false;
-  }
-  if(!loadActors(actorsVal->object())) {
-    return false;
-  }
+  FAIL_IF(actorsVal == nullptr, "No `actors` field.");
+  FAIL_IF(!actorsVal->isObject(), "Expected object for actors.");
+  FAIL_IF(!loadActors(actorsVal->object()), "Could not parse `actors`.");
 
   const auto *commandsVal = data.get("commands"_sv);
-  if(commandsVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene:\n"
-      "Could not find commands.");
-    return false;
-  }
-  if(!commandsVal->isArray()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene:\n"
-      "Expected array for commands.");
-    return false;
-  }
-  if(!loadCommands(commandsVal->array())) {
-    return false;
-  }
+  FAIL_IF(commandsVal == nullptr, "No `commands` field.");
+  FAIL_IF(!commandsVal->isArray(), "Expected array for commands.");
+  FAIL_IF(!loadCommands(commandsVal->array()), "Could not parse `commands`.");
 
   return true;
+
+  #undef FAIL_HEADER
 }
 
 bool StoryScene::loadActors(const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene actors"
+
   actors = {data.size()};
   usize idx = 0;
   for(const auto &[key, val]: data.pairs()) {
-    if(!val.isObject()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene actors:\n"
-        "Expected object for actor {}.",
-        key);
-      return false;
-    }
+    FAIL_IF(!val.isObject(), "Expected object for actor {}.", key);
     const auto &obj = val.object();
     auto &actor = actors[idx++];
-    if(!actor.load(key, obj)) {
-      return false;
-    }
+    FAIL_IF(!actor.load(key, obj), "Could not parse actor object.");
   }
   return true;
+
+  #undef FAIL_HEADER
 }
 
 bool Actor::load(const StringView &actorID, const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene actor {}"
+
   id = actorID;
   const auto *nameVal = data.get("name"_sv);
-  if(nameVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Could not find name for actor {}.",
-      actorID);
-    return false;
-  }
-  if(!nameVal->isString()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Expected string for actor {} name.",
-      actorID);
-    return false;
-  }
+  FAIL_IF(nameVal == nullptr, "No `name` field.", actorID);
+  FAIL_IF(!nameVal->isString(), "Expected string for `name`.", actorID);
   name = nameVal->string();
 
-  const auto *sheetNameVal = data.get("sheet"_sv);
-  if(sheetNameVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Could not find sheet for actor {}.",
-      actorID);
-    return false;
-  }
-  if(!sheetNameVal->isString()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Expected string for actor {} sheet.",
-      actorID);
-    return false;
-  }
-  sheetName = sheetNameVal->string();
-
   const auto *spritesVal = data.get("sprites"_sv);
-  if(spritesVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Could not find sprites for actor {}.",
-      actorID);
-    return false;
-  }
-  if(!spritesVal->isArray()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Expected array for actor {} sprites.",
-      actorID);
-    return false;
-  }
+  FAIL_IF(spritesVal == nullptr, "No `sprites` field.", actorID);
+  FAIL_IF(!spritesVal->isArray(), "Expected array for `sprites`.", actorID);
   auto spriteArr = spritesVal->array();
-  if(spriteArr.size() != 2) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Sheet size must consist of 2 numbers for actor {}.",
-      actorID);
-    return false;
-  }
+  FAIL_IF(spriteArr.size() != 2, "Sprite array must be 2 elements.", actorID);
   const auto &xVal = spriteArr[0];
+  FAIL_IF(!xVal.isNumber(), "Expected number for sprite array X.", actorID);
   const auto &yVal = spriteArr[1];
-  if(!xVal.isNumber() || !yVal.isNumber()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene actors:\n"
-      "Sheet size must consist of 2 numbers for actor {}.",
-      actorID);
-    return false;
-  }
+  FAIL_IF(!yVal.isNumber(), "Expected number for sprite array Y.", actorID);
   auto width = s32(xVal.number());
   auto height = s32(yVal.number());
   sheetSize = {width, height};
@@ -143,28 +78,22 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
   }
 
   return true;
+
+  #undef FAIL_HEADER
 }
 
 bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
+  #define FAIL_HEADER "Could not parse story scene sprites"
+
   Slice<const json::Object*> spriteCommands{actors.size()};
   for(const auto &val: commandData) {
-    if(!val.isObject()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprites:\n"
-        "Expected object for command.");
-      return false;
-    }
+    FAIL_IF(!val.isObject(), "Expected object for command.");
     const auto &obj = val.object();
     const auto *spriteVal = obj.get("sprite"_sv);
     if(spriteVal == nullptr) {
       continue;
     }
-    if(!spriteVal->isObject()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprites:\n"
-        "Expected object for sprite command.");
-      return false;
-    }
+    FAIL_IF(!spriteVal->isObject(), "Expected object for sprite command.");
     const auto &spriteObj = spriteVal->object();
     spriteCommands.push(&spriteObj);
   }
@@ -172,18 +101,8 @@ bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
   Slice<Sprite> spriteData{spriteCommands.size()};
   for(const auto *command: spriteCommands) {
     const auto *idVal = command->get("id"_sv);
-    if(idVal == nullptr) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprites:\n"
-        "Could not find id for sprite command.");
-      return false;
-    }
-    if(!idVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprites:\n"
-        "Expected string for sprite command id.");
-      return false;
-    }
+    FAIL_IF(idVal == nullptr, "Could not find id for sprite command.");
+    FAIL_IF(!idVal->isString(), "Expected string for sprite command id.");
     const auto &spriteID = idVal->string();
     for(auto &sprite: spriteData) {
       if(sprite.id.view() == spriteID) {
@@ -196,114 +115,75 @@ bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
 
   sprites = spriteData.view();
   return true;
+
+  #undef FAIL_HEADER
 }
 
 bool StoryScene::loadCommands(const ArrayView<json::Value> &data) {
+  #define FAIL_HEADER "Could not parse story scene commands"
+
   commands = {data.size()};
   for(usize i = 0; i < data.size(); ++i) {
     const auto &command = data[i];
-    if(!command.isObject()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene commands:\n"
-        "Expected object for command {}.",
-        i);
-      return false;
-    }
+    FAIL_IF(!command.isObject(), "Expected object for command {}.", i);
     auto &cmd = commands[i];
     const auto &obj = command.object();
 
     const auto *data = obj.get("sprite"_sv);
     if(data != nullptr) {
-      if(!data->isObject()) {
-        dialog::error("Failure"_sv,
-          "Could not parse story scene commands:\n"
-          "Expected object for sprite command {}.",
-          i);
-        return false;
-      }
+      FAIL_IF(!data->isObject(), "Expected object for sprite command {}.", i);
       cmd.code = CommandSprite;
       cmd.sprite.emplace();
-      if(!cmd.sprite->load(*this, data->object())) {
-        return false;
-      }
+      FAIL_IF(!cmd.sprite->load(*this, data->object()),
+        "Could not parse sprite command {}.", i);
       continue;
     }
 
     data = obj.get("speak"_sv);
     if(data != nullptr) {
-      if(!data->isObject()) {
-        dialog::error("Failure"_sv,
-          "Could not parse story scene commands:\n"
-          "Expected object for speak command {}.",
-          i);
-        return false;
-      }
+      FAIL_IF(!data->isObject(), "Expected object for speak command {}.", i);
       cmd.code = CommandSpeak;
       cmd.speak.emplace();
-      if(!cmd.speak->load(data->object())) {
-        return false;
-      }
+      FAIL_IF(!cmd.speak->load(*this, data->object()),
+        "Could not parse speak command {}.", i);
       continue;
     }
 
     data = obj.get("wait"_sv);
     if(data != nullptr) {
-      if(!data->isObject()) {
-        dialog::error("Failure"_sv,
-          "Could not parse story scene commands:\n"
-          "Expected object for wait command {}.",
-          i);
-        return false;
-      }
+      FAIL_IF(!data->isObject(), "Expected object for wait command {}.", i);
       cmd.code = CommandWait;
       cmd.wait.emplace();
-      if(!cmd.wait->load(data->object())) {
-        return false;
-      }
+      FAIL_IF(!cmd.wait->load(data->object()),
+        "Could not parse wait command {}.", i);
       continue;
     }
 
     data = obj.get("background"_sv);
     if(data != nullptr) {
-      if(!data->isObject()) {
-        dialog::error("Failure"_sv,
-          "Could not parse story scene commands:\n"
-          "Expected object for background command {}.",
-          i);
-        return false;
-      }
+      FAIL_IF(!data->isObject(), "Expected object for background command {}.", i);
       cmd.code = CommandBackground;
       cmd.background.emplace();
-      if(!cmd.background->load(data->object())) {
-        return false;
-      }
+      FAIL_IF(!cmd.background->load(*this, data->object()),
+        "Could not parse background command {}.", i);
       continue;
     }
 
-    dialog::error("Failure"_sv,
-      "Could not parse story scene commands:\n"
-      "Invalid command {}.",
-      i);
+    FAIL("Invalid command {}.", i);
     return false;
   }
 
   return true;
+
+  #undef FAIL_HEADER
 }
 
 bool SpriteCommand::load(const StoryScene &scene, const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene sprite command"
+
   const auto *idVal = data.get("id"_sv);
-  if(idVal == nullptr) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene sprite command:\n"
-      "Could not find id.");
-    return false;
-  }
-  if(!idVal->isString()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene sprite command:\n"
-      "Expected string for id.");
-    return false;
-  }
+  FAIL_IF(idVal == nullptr, "Could not find id for sprite command.");
+  FAIL_IF(!idVal->isString(), "Expected string for sprite command id.");
   const auto &spriteID = idVal->string();
   usize sprite = 0;
   for(; sprite < scene.sprites.size(); ++sprite) {
@@ -311,63 +191,33 @@ bool SpriteCommand::load(const StoryScene &scene, const json::Object &data) {
       break;
     }
   }
-  if(sprite == scene.sprites.size()) {
-    dialog::error("Failure"_sv,
-      "Could not parse story scene sprite command:\n"
-      "Could not find sprite with id {}.",
-      spriteID);
-    return false;
-  }
+  FAIL_IF(sprite == scene.sprites.size(),
+    "Could not find sprite with id {}.", spriteID);
 
   const auto *hideVal = data.get("hide"_sv);
   if(hideVal != nullptr) {
-    if(!hideVal->isBoolean()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected bool for hide.");
-      return false;
-    }
+    FAIL_IF(!hideVal->isBoolean(), "Expected bool for hide.");
     hide = hideVal->boolean();
   }
 
   const auto *actorVal = data.get("actor"_sv);
   if(actorVal != nullptr) {
-    if(!actorVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected string for actor.");
-      return false;
-    }
+    FAIL_IF(!actorVal->isString(), "Expected string for actor.");
     actor = 0;
     for(; actor < scene.actors.size(); ++actor) {
       if(scene.actors[actor].id.view() == actorVal->string()) {
         break;
       }
     }
-    if(actor == scene.actors.size()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Could not find actor with id {}.",
-        actorVal->string());
-      return false;
-    }
+    FAIL_IF(actor == scene.actors.size(),
+      "Could not find actor with id {}.", actorVal->string());
   }
 
   const auto *portraitVal = data.get("portrait"_sv);
   if(portraitVal != nullptr) {
-    if(!portraitVal->isArray()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array for portrait.");
-      return false;
-    }
+    FAIL_IF(!portraitVal->isArray(), "Expected array for portrait.");
     auto portraitArr = portraitVal->array();
-    if(portraitArr.size() != 2) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array of size 2 for portrait.");
-      return false;
-    }
+    FAIL_IF(portraitArr.size() != 2, "Expected array of size 2 for portrait.");
     auto portraitX = s32(portraitArr[0].number());
     auto portraitY = s32(portraitArr[1].number());
     const auto &actorData = scene.actors[actor];
@@ -376,45 +226,62 @@ bool SpriteCommand::load(const StoryScene &scene, const json::Object &data) {
 
   const auto *posVal = data.get("pos"_sv);
   if(posVal != nullptr) {
-    if(!posVal->isArray()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array for pos.");
-      return false;
-    }
+    FAIL_IF(!posVal->isArray(), "Expected array for pos.");
     auto posArr = posVal->array();
-    if(posArr.size() != 2) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array of size 2 for pos.");
-      return false;
-    }
-    pos = {s32(posArr[0].number()), s32(posArr[1].number())};
+    FAIL_IF(posArr.size() != 2, "Expected array of size 2 for pos.");
+    pos = {f32(posArr[0].number()), f32(posArr[1].number())};
   }
 
   const auto *sizeVal = data.get("size"_sv);
   if(sizeVal != nullptr) {
-    if(!sizeVal->isArray()) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array for size.");
-      return false;
-    }
+    FAIL_IF(!sizeVal->isArray(), "Expected array for size.");
     auto sizeArr = sizeVal->array();
-    if(sizeArr.size() != 2) {
-      dialog::error("Failure"_sv,
-        "Could not parse story scene sprite command:\n"
-        "Expected array of size 2 for size.");
-      return false;
-    }
-    size = {s32(sizeArr[0].number()), s32(sizeArr[1].number())};
+    FAIL_IF(sizeArr.size() != 2, "Expected array of size 2 for size.");
+    size = {f32(sizeArr[0].number()), f32(sizeArr[1].number())};
   }
 
   return true;
+
+  #undef FAIL_HEADER
+}
+
+bool SpeakCommand::load(const struct StoryScene &scene, const json::Object &data) {
+  #define FAIL_HEADER "Could not parse story scene speak command"
+
+  const auto *actorVal = data.get("actor"_sv);
+  FAIL_IF(actorVal == nullptr, "Could not find actor for speak command.");
+  FAIL_IF(!actorVal->isString(), "Expected string for actor.");
+  actor = 0;
+  for(; actor < scene.actors.size(); ++actor) {
+    if(scene.actors[actor].id.view() == actorVal->string()) {
+      break;
+    }
+  }
+  FAIL_IF(actor == scene.actors.size(),
+    "Could not find actor with id {}.", actorVal->string());
+
+  const auto *textVal = data.get("text"_sv);
+  FAIL_IF(textVal == nullptr, "Could not find text for speak command.");
+  FAIL_IF(!textVal->isString(), "Expected string for text.");
+  text = textVal->string();
+
+  const auto *portraitVal = data.get("portrait"_sv);
+  if(portraitVal != nullptr) {
+    FAIL_IF(!portraitVal->isArray(), "Expected array for portrait.");
+    auto portraitArr = portraitVal->array();
+    FAIL_IF(portraitArr.size() != 2, "Expected array of size 2 for portrait.");
+    auto portraitX = s32(portraitArr[0].number());
+    auto portraitY = s32(portraitArr[1].number());
+    const auto &actorData = scene.actors[actor];
+    portrait = portraitY * actorData.sheetSize.x + portraitX;
+  }
+
+  return true;
+
+  #undef FAIL_HEADER
 }
 
 // TODO:
-//  * SpeakCommand::load
 //  * WaitCommand::load
 //  * BackgroundCommand::load
 
