@@ -17,4 +17,24 @@ nwge::State *launch(const nwge::StringView &gameName);
 // Game main menu state.
 nwge::State *gameMenu(Game &&game);
 
-}
+// State that handles a scene.
+//  This state has two sub states:
+//  * One for field scenes
+//  * One for story scenes
+nwge::State *scene(Game &&game, const nwge::StringView &sceneName);
+
+struct SceneStateData {
+  Game &game;
+  Scene &scene;
+  nwge::render::Font &font;
+};
+
+#if 0 // TODO
+// Sub state for field scenes.
+nwge::SubState *fieldScene(SceneStateData &data);
+#endif
+
+// Sub state for story scenes.
+nwge::SubState *storyScene(SceneStateData &data);
+
+} // namespace sigmoid

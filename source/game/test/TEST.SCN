@@ -25,18 +25,22 @@
     }},
     {"sprite": {
       "id": "tester",
+      "actor": "tester",
       "portrait": [0, 1]
     }},
     {"speak": {
+      "actor": "tester",
       "text": "This is some more dialogue.",
       "portrait": [0, 1]
     }},
     {"wait": {"time": 1.0}},
     {"sprite": {
       "id": "tester",
+      "actor": "tester",
       "portrait": [1, 0]
     }},
     {"speak": {
+      "actor": "tester",
       "text": "You have waited for one second.",
       "portrait": [1, 0]
     }},
@@ -45,9 +49,11 @@
     }},
     {"sprite": {
       "id": "tester",
+      "actor": "tester",
       "portrait": [0, 1]
     }},
     {"speak": {
+      "actor": "tester",
       "text": "A change of scenery.",
       "portrait": [0, 1]
     }}

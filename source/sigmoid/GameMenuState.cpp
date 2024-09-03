@@ -211,7 +211,7 @@ private:
   bool handleButtonPress() {
     switch(mSelection) {
     case ButtonNew:
-      todo("new game sub state");
+      swapStatePtr(scene(std::move(mGame), mGame.startScene()));
       return true;
     case ButtonLoad:
       todo("load game sub state");

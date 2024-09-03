@@ -58,6 +58,11 @@ public:
     return mType;
   }
 
+  [[nodiscard]]
+  inline const StoryScene &story() const {
+    return *mStory;
+  }
+
   void enqueue(nwge::data::Bundle &bundle);
   bool load(nwge::data::RW &file);
 

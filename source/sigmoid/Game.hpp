@@ -6,6 +6,7 @@ Game.hpp
 Defines game information
 */
 
+#include "Scene.hpp"
 #include <nwge/common/string.hpp>
 #include <nwge/data/bundle.hpp>
 

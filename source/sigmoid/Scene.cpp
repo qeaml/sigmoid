@@ -6,6 +6,12 @@ using namespace nwge;
 
 namespace sigmoid {
 
+Scene::Scene(const nwge::StringView &name)
+  : mName(name)
+{}
+
+Scene::~Scene() = default;
+
 void Scene::enqueue(data::Bundle &bundle) {
   ScratchArray<char> filename = ScratchString::formatted("{}.scn", mName);
   toUpper(filename.view());
@@ -130,6 +136,7 @@ bool Scene::load(data::RW &file) {
   const auto &type = typeVal->string();
   if(type.equalsIgnoreCase("field"_sv)) {
     mType = SceneField;
+    // TODO: FieldScene loading
   } else if(type.equalsIgnoreCase("story"_sv)) {
     mType = SceneStory;
     mStory.emplace();
@@ -143,8 +150,6 @@ bool Scene::load(data::RW &file) {
       mName, type);
     return false;
   }
-
-  // TODO: parse per-type data.
   return true;
 }
 

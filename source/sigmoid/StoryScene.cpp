@@ -273,6 +273,7 @@ bool SpriteCommand::load(const StoryScene &scene, const json::Object &data) {
 
   const auto *portraitVal = data.get("portrait"_sv);
   if(portraitVal != nullptr) {
+    FAIL_IF(actorVal == nullptr, "Need actor for portrait.");
     FAIL_IF(!portraitVal->isArray(), "Expected array for portrait.");
     auto portraitArr = portraitVal->array();
     FAIL_IF(portraitArr.size() != 2, "Expected array of size 2 for portrait.");
