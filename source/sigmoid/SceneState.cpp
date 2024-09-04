@@ -1,4 +1,5 @@
 #include "states.hpp"
+#include <nwge/render/window.hpp>
 
 using namespace nwge;
 
@@ -41,6 +42,19 @@ public:
     }
 
     return true;
+  }
+
+  bool tick([[maybe_unused]] f32 delta) override {
+    /*
+    We only reach here once the appropriate scene SubState has been popped.
+    Return to menu.
+    */
+    swapStatePtr(gameMenu(std::move(mGame)));
+    return true;
+  }
+
+  void render() const override {
+    render::clear({0, 0, 0});
   }
 
 private:

@@ -40,10 +40,6 @@ public:
         return true;
       }
     }
-    if(mCommandOff >= mStory.commands.size()) {
-      dialog::info("StorySceneSubState"_sv, "Finished."_sv);
-      return false;
-    }
     if(!mWaitForInput) {
       nextCommand();
       return true;
@@ -153,7 +149,7 @@ private:
 
   static constexpr glm::vec4 cBgColor{0, 0, 0, 0.5f};
   static constexpr f32 cTextMargin = 0.01f;
-  static constexpr f32 cBaseY = 0.75f;
+  static constexpr f32 cBaseY = 0.7f;
   static constexpr f32 cActorNameTextHeight = 0.05f;
   static constexpr glm::vec3 cActorNameBgPos{0.05f, cBaseY, 0.51f};
   static constexpr f32 cActorNameBgHeight = cActorNameTextHeight + 2*cTextMargin;
@@ -167,13 +163,18 @@ private:
     0.05f, cActorNameBgPos.y + cActorNameBgHeight, 0.51f
   };
   static constexpr f32 cTextHeight = 0.05f;
-  static constexpr glm::vec2 cTextBgSize{0.9f, 3*cTextMargin + 2*cTextHeight};
+  static constexpr glm::vec2 cTextBgSize{
+    1.0f,
+    4*cTextMargin + 3*cTextHeight
+  };
   static constexpr glm::vec3 cTextPos{
     cTextBgPos.x+cTextMargin, cTextBgPos.y+cTextMargin, 0.5f
   };
+  static constexpr f32 cActorPortraitEndX = 0.95f;
 
   void renderTextBox() const {
-    const auto &name = mActors[mCurrentActor].name;
+    const auto &actor = mActors[mCurrentActor];
+    const auto &name = actor.name;
     auto measure = mData.font.measure(name, cActorNameTextHeight);
     glm::vec2 nameBgSize{
       measure.x + 2*cTextMargin, cActorNameBgHeight
@@ -184,15 +185,26 @@ private:
       nameBgSize
     );
     renderRect(cActorNameBgPos, nameBgSize);
-    renderRect(cTextBgPos, cTextBgSize);
+    glm::vec3 textBgPos = m4x3.pos(cTextBgPos);
+    glm::vec2 textBgSize = m1x1.size(cTextBgSize);
+    render::rect(textBgPos, textBgSize);
     render::color();
     render::line(
       m4x3.pos(cActorNameUnderlineStart),
       m4x3.pos(cActorNameUnderlineStart) + glm::vec3{nameBgSize.x, 0, 0},
       1
     );
-    renderText(mActors[mCurrentActor].name, cActorNameTextPos, cActorNameTextHeight);
+    renderText(name, cActorNameTextPos, cActorNameTextHeight);
     renderText(mCurrentText.sub(0, mTextChars), cTextPos, cTextHeight);
+
+    glm::vec3 actorPortraitPos = textBgPos + glm::vec3(textBgSize.x, 0, 0);
+    glm::vec2 actorPortraitSize = m1x1.size({cTextBgSize.y, cTextBgSize.y});
+    render::rect(
+      actorPortraitPos,
+      actorPortraitSize,
+      actor.sheet,
+      actor.sprites[mActorPortrait]
+    );
   }
 
   constexpr inline void renderRect(glm::vec3 pos, glm::vec2 extents) const {
@@ -207,6 +219,11 @@ private:
   bool mWaitForInput = false;
 
   void nextCommand() {
+    if(mCommandOff >= mStory.commands.size()) {
+      popSubState();
+      return;
+    }
+
     mWaitForInput = false;
     const auto &command = mStory.commands[mCommandOff++];
     switch(command.code) {
