@@ -1,4 +1,5 @@
 #include "states.hpp"
+#include "imgui/imgui.hpp"
 #include <nwge/render/AspectRatio.hpp>
 #include <nwge/render/draw.hpp>
 #include <nwge/render/Font.hpp>
