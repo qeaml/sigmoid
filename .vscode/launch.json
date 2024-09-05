@@ -7,9 +7,17 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug",
+      "name": "Debug Test Game",
       "program": "${workspaceFolder}/target/debug/sigmoid",
       "args": ["test"],
+      "cwd": "${workspaceFolder}/target"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Editor (gar project)",
+      "program": "${workspaceFolder}/target/debug/sigmoid",
+      "args": ["-edit", "gar"],
       "cwd": "${workspaceFolder}/target"
     }
   ]

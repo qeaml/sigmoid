@@ -7,6 +7,7 @@ State functions
 */
 
 #include "Game.hpp"
+#include "Scene.hpp"
 #include <nwge/state.hpp>
 
 namespace sigmoid {
@@ -36,5 +37,11 @@ nwge::SubState *fieldScene(SceneStateData &data);
 
 // Sub state for story scenes.
 nwge::SubState *storyScene(SceneStateData &data);
+
+// Editor game selection state
+nwge::State *editorGameSelect();
+
+// Editor game menu state
+nwge::State *editorGameMenu(const nwge::StringView &gameName);
 
 } // namespace sigmoid

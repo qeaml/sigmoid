@@ -7,13 +7,13 @@ using namespace nwge;
 namespace sigmoid {
 
 Game::Game(const StringView &name)
-  : mName(name)
+  : name(name)
 {}
 
 Game::~Game() = default;
 
 void Game::preload() {
-  ScratchString filename = ScratchString::formatted("{}.bndl", mName);
+  ScratchString filename = ScratchString::formatted("{}.bndl", name);
   mBundle
     .load({"games"_sv, filename})
     .nqCustom("GAME.INFO"_sv, *this);
@@ -24,7 +24,7 @@ bool Game::load(data::RW &file) {
   if(size <= 0) {
     dialog::error("Failure"_sv,
       "Could not load GAME.INFO for {}.",
-      mName);
+      name);
     return false;
   }
 
@@ -32,7 +32,7 @@ bool Game::load(data::RW &file) {
   if(!file.read(raw.view())) {
     dialog::error("Failure"_sv,
       "Could not load GAME.INFO for {}.",
-      mName);
+      name);
     return false;
   }
 
@@ -41,7 +41,7 @@ bool Game::load(data::RW &file) {
     dialog::error("Failure"_sv,
       "Could not parse GAME.INFO for {}:\n"
       "{}",
-      mName,
+      name,
       json::errorMessage(res.error));
     return false;
   }
@@ -49,7 +49,7 @@ bool Game::load(data::RW &file) {
     dialog::error("Failure"_sv,
       "Could not parse GAME.INFO for {}:\n"
       "Expected object.",
-      mName);
+      name);
     return false;
   }
   const auto &obj = res.value->object();
@@ -58,64 +58,64 @@ bool Game::load(data::RW &file) {
   if(titleVal == nullptr) {
     dialog::warning("Warning",
       "Could not find title in GAME.INFO, fallback will be used.");
-    mTitle = mName;
+    title = name;
   } else {
     if(!titleVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for title.",
-        mName);
+        name);
       return false;
     }
-    mTitle = titleVal->string();
+    title = titleVal->string();
   }
 
   const auto *authorVal = obj.get("author"_sv);
   if(authorVal == nullptr) {
     dialog::warning("Warning",
       "Could not find author in GAME.INFO, fallback will be used.");
-    mAuthor = "Unknown"_sv;
+    author = "Unknown"_sv;
   } else {
     if(!authorVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for author.",
-        mName);
+        name);
       return false;
     }
-    mAuthor = authorVal->string();
+    author = authorVal->string();
   }
 
   const auto *descriptionVal = obj.get("description"_sv);
   if(descriptionVal == nullptr) {
     dialog::warning("Warning",
       "Could not find description in GAME.INFO, fallback will be used.");
-    mDescription = "No description available."_sv;
+    description = "No description available."_sv;
   } else {
     if(!descriptionVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for description.",
-        mName);
+        name);
       return false;
     }
-    mDescription = descriptionVal->string();
+    description = descriptionVal->string();
   }
 
   const auto *versionVal = obj.get("version"_sv);
   if(versionVal == nullptr) {
     dialog::warning("Warning",
       "Could not find version in GAME.INFO, fallback will be used.");
-    mVersion = "0.0.0"_sv;
+    version = "0.0.0"_sv;
   } else {
     if(!versionVal->isString()) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for version.",
-        mName);
+        name);
       return false;
     }
-    mVersion = versionVal->string();
+    version = versionVal->string();
   }
 
   const auto *logoVal = obj.get("logo"_sv);
@@ -124,10 +124,10 @@ bool Game::load(data::RW &file) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for logo.",
-        mName);
+        name);
       return false;
     }
-    mLogo = logoVal->string();
+    logo = logoVal->string();
   }
 
   const auto *menuBackgroundVal = obj.get("menu_background"_sv);
@@ -136,10 +136,10 @@ bool Game::load(data::RW &file) {
       dialog::error("Failure"_sv,
         "Could not parse GAME.INFO for {}:\n"
         "Expected string for menu_background.",
-        mName);
+        name);
       return false;
     }
-    mMenuBackground = menuBackgroundVal->string();
+    menuBackground = menuBackgroundVal->string();
   }
 
   const auto *startSceneVal = obj.get("start_scene"_sv);
@@ -152,12 +152,26 @@ bool Game::load(data::RW &file) {
     dialog::error("Failure"_sv,
       "Could not parse GAME.INFO for {}:\n"
       "Expected string for start_scene.",
-      mName);
+      name);
     return false;
   }
-  mStartScene = startSceneVal->string();
+  startScene = startSceneVal->string();
 
   return true;
+}
+
+bool Game::save(data::RW &file) {
+  static constexpr usize cPairCount = 7;
+  Slice<json::Object::Pair> pairs{cPairCount};
+  pairs.push({"title"_sv, title.view()});
+  pairs.push({"author"_sv, author.view()});
+  pairs.push({"description"_sv, description.view()});
+  pairs.push({"version"_sv, version.view()});
+  pairs.push({"logo"_sv, logo.view()});
+  pairs.push({"menu_background"_sv, menuBackground.view()});
+  pairs.push({"start_scene"_sv, startScene.view()});
+  auto str = json::encode(json::Object{pairs.view()});
+  return file.write(str.view());
 }
 
 } // namespace sigmoid

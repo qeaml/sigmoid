@@ -21,12 +21,20 @@ s32 main(s32 argc, CStr *argv) {
   );
   ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(guiContext()));
 
-  StringView gameName;
-  if(cli::posC() >= 1) {
-    gameName = cli::pos(0);
+  if(cli::posC() < 1) {
+    dialog::error("Failure"_sv, "No game was specified."_sv);
+    return 1;
   }
-  startPtr(launch(gameName), {
-    .appName = "Sigmoid Engine"_sv,
-  });
+
+  StringView gameName = cli::pos(0);
+  if(cli::flag("edit")) {
+    startPtr(editorGameMenu(gameName), {
+      .appName = "Sigmoid Engine Editor"_sv,
+    });
+  } else {
+    startPtr(launch(gameName), {
+      .appName = "Sigmoid Engine"_sv,
+    });
+  }
   return 0;
 }
