@@ -33,14 +33,14 @@ public:
       .load({"sigmoid.bndl"_sv})
       .nqFont("INTER.CFN"_sv, mFont);
 
-    mHasLogo = !mGame.logo().empty();
+    mHasLogo = !mGame.logo.empty();
     if(mHasLogo) {
-      mGame.bundle().nqTexture(mGame.logo(), mLogo);
+      mGame.bundle.nqTexture(mGame.logo, mLogo);
     }
 
-    mHasBackground = !mGame.menuBackground().empty();
+    mHasBackground = !mGame.menuBackground.empty();
     if(mHasBackground) {
-      mGame.bundle().nqTexture(mGame.menuBackground(), mBackground);
+      mGame.bundle.nqTexture(mGame.menuBackground, mBackground);
     }
     return true;
   }
@@ -100,7 +100,7 @@ public:
     if(mHasLogo) {
       drawRect(cLogoPos, mLogoExtents, mLogo);
     } else {
-      drawText(mGame.title(), cLogoPos, cBigText);
+      drawText(mGame.title, cLogoPos, cBigText);
     }
 
     drawButton(ButtonNew, "New Game"_sv);
@@ -109,9 +109,9 @@ public:
 
     auto cursor = mFont.cursor(m4x3.pos(cTitlePos), cSmallText);
     cursor
-      << mGame.title() << '\n'
-      << "by "_sv << mGame.author() << '\n'
-      << 'v' << mGame.version();
+      << mGame.title << '\n'
+      << "by "_sv << mGame.author << '\n'
+      << 'v' << mGame.version;
     cursor.draw();
   }
 
@@ -212,7 +212,7 @@ private:
   bool handleButtonPress() {
     switch(mSelection) {
     case ButtonNew:
-      swapStatePtr(scene(std::move(mGame), mGame.startScene()));
+      swapStatePtr(scene(std::move(mGame), mGame.startScene));
       return true;
     case ButtonLoad:
       todo("load game sub state");

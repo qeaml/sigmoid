@@ -87,6 +87,10 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
 bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
   #define FAIL_HEADER "Could not parse story scene sprites"
 
+  if(commandData.empty()) {
+    return true;
+  }
+
   Slice<const json::Object*> spriteCommands{actors.size()};
   for(const auto &val: commandData) {
     FAIL_IF(!val.isObject(), "Expected object for command.");
@@ -123,6 +127,10 @@ bool StoryScene::loadSprites(const ArrayView<json::Value> &commandData) {
 
 bool StoryScene::loadBackgrounds(const ArrayView<json::Value> &commandData) {
   #define FAIL_HEADER "Could not parse story scene backgrounds"
+
+  if(actors.empty()) {
+    return true;
+  }
 
   Slice<const json::Object*> backgroundCommands{actors.size()};
   for(const auto &val: commandData) {
@@ -395,6 +403,138 @@ bool BackgroundCommand::load(const StoryScene &scene, const json::Object &data) 
   return true;
 
   #undef FAIL_HEADER
+}
+
+json::Object StoryScene::toObject() const {
+  Slice<json::Object::Pair> pairs{4};
+  pairs.push({"actors"_sv, actorsObject()});
+  pairs.push({"commands"_sv, commandsArray()});
+  return json::Object{pairs.view()};
+}
+
+json::Object StoryScene::actorsObject() const {
+  if(actors.empty()) {
+    return {};
+  }
+  Slice<json::Object::Pair> pairs{actors.size()};
+  for(const auto & actor: actors) {
+    pairs.push({actor.id.view(), actor.toObject()});
+  }
+  return json::Object{pairs.view()};
+}
+
+json::Object Actor::toObject() const {
+  Slice<json::Object::Pair> pairs{4};
+  pairs.push({"name"_sv, name.view()});
+  pairs.push({"sheet"_sv, sheet.view()});
+  std::array sheetSizeArray{
+    json::Value{f64(sheetSize.x)},
+    json::Value{f64(sheetSize.y)},
+  };
+  pairs.push({"sheetSize"_sv, ArrayView(sheetSizeArray.data(), 2)});
+  return json::Object{pairs.view()};
+}
+
+ArrayView<json::Value> StoryScene::commandsArray() const {
+  if(commands.empty()) {
+    return {};
+  }
+  Slice<json::Value> values{commands.size()};
+  for(const auto &command: commands) {
+    values.push(command.toObject(*this));
+  }
+  return values.view();
+}
+
+json::Object Command::toObject(const StoryScene &scene) const {
+  Slice<json::Object::Pair> pairs{1};
+  switch(code) {
+  case CommandSpeak:
+    pairs.push({"speak"_sv, speak->toObject(scene)});
+    break;
+  case CommandSprite:
+    pairs.push({"sprite"_sv, sprite->toObject(scene)});
+    break;
+  case CommandWait:
+    pairs.push({"wait"_sv, wait->toObject()});
+    break;
+  case CommandBackground:
+    pairs.push({"background"_sv, background->toObject(scene)});
+    break;
+  default:
+    NWGE_UNREACHABLE("invalid CommandCode");
+  }
+  return json::Object{pairs.view()};
+}
+
+json::Object SpriteCommand::toObject(const StoryScene &scene) const {
+  Slice<json::Object::Pair> pairs{4};
+  pairs.push({"sprite"_sv, scene.sprites[sprite].id.view()});
+  if(actor >= 0) {
+    pairs.push({"actor"_sv, scene.actors[actor].id.view()});
+    if(portrait >= 0) {
+      auto portraitX = portrait % scene.actors[actor].sheetSize.x;
+      auto portraitY = portrait / scene.actors[actor].sheetSize.x;
+      std::array portraitArray{
+        json::Value{f64(portraitX)},
+        json::Value{f64(portraitY)},
+      };
+      pairs.push({"portrait"_sv, ArrayView(portraitArray.data(), 2)});
+    }
+  }
+  pairs.push({"hide"_sv, hide});
+  if(pos.x != -1 && pos.y != -1) {
+    std::array posArray{
+      json::Value{f64(pos.x)},
+      json::Value{f64(pos.y)},
+    };
+    pairs.push({"pos"_sv, ArrayView(posArray.data(), 2)});
+  }
+  if(size.x != -1 && size.y != -1) {
+    std::array sizeArray{
+      json::Value{f64(size.x)},
+      json::Value{f64(size.y)},
+    };
+    pairs.push({"size"_sv, ArrayView(sizeArray.data(), 2)});
+  }
+  return json::Object{pairs.view()};
+}
+
+json::Object SpeakCommand::toObject(const StoryScene &scene) const {
+  Slice<json::Object::Pair> pairs{4};
+  if(actor < 0) {
+    return json::Object{};
+  }
+  const auto &actorInfo = scene.actors[actor];
+  pairs.push({"actor"_sv, actorInfo.id.view()});
+  if(portrait >= 0) {
+    auto portraitX = portrait % actorInfo.sheetSize.x;
+    auto portraitY = portrait / actorInfo.sheetSize.x;
+    std::array portraitArray{
+      json::Value{f64(portraitX)},
+      json::Value{f64(portraitY)},
+    };
+    pairs.push({"portrait"_sv, ArrayView(portraitArray.data(), 2)});
+  }
+  pairs.push({"text"_sv, text.view()});
+  return json::Object{pairs.view()};
+}
+
+json::Object WaitCommand::toObject() const {
+  Slice<json::Object::Pair> pairs{1};
+  pairs.push({"time"_sv, duration});
+  return json::Object{pairs.view()};
+}
+
+json::Object BackgroundCommand::toObject(const StoryScene &scene) const {
+  Slice<json::Object::Pair> pairs{2};
+  if(image >= 0) {
+    pairs.push({"image"_sv, scene.bgImages[image].view()});
+  }
+  if(music >= 0) {
+    pairs.push({"music"_sv, scene.musicTracks[music].view()});
+  }
+  return json::Object{pairs.view()};
 }
 
 } // namespace sigmoid

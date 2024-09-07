@@ -13,6 +13,7 @@ namespace sigmoid {
 
 class Game {
 public:
+  nwge::data::Bundle bundle;
   nwge::String<> name;        // -> name of bundle file
   nwge::String<> title;       // -> title of game shown in menu
   nwge::String<> author;
@@ -32,9 +33,6 @@ public:
   void preload(); // -> enqueue data to be loaded
   bool load(nwge::data::RW &file);
   bool save(nwge::data::RW &file);
-
-private:
-  nwge::data::Bundle mBundle;
 };
 
 } // namespace sigmoid

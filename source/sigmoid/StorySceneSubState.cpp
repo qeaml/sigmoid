@@ -23,7 +23,7 @@ public:
   {
     initActors();
 
-    const auto &background = mData.scene.background();
+    const auto &background = mData.scene.background;
     if(!background.empty()) {
       showBackground(background);
     }
@@ -64,7 +64,7 @@ public:
 
 private:
   SceneStateData &mData;
-  const StoryScene &mStory = mData.scene.story();
+  const StoryScene &mStory = *mData.scene.story;
 
   render::AspectRatio m1x1{1, 1};
   render::AspectRatio m4x3{4, 3};
@@ -78,7 +78,7 @@ private:
 
   void showBackground(const StringView &name) {
     mShowBackground = true;
-    mData.game.bundle().nqTexture(name, mBackground);
+    mData.game.bundle.nqTexture(name, mBackground);
   }
 
   void backgroundCmd(const BackgroundCommand &cmd) {
@@ -108,7 +108,7 @@ private:
 
       info.name = actor.name;
 
-      mData.game.bundle().nqTexture(actor.sheet, info.sheet);
+      mData.game.bundle.nqTexture(actor.sheet, info.sheet);
       usize spriteCount = usize(actor.sheetSize.x) *  usize(actor.sheetSize.y);
       info.sprites = {spriteCount};
       for(usize j = 0; j < spriteCount; ++j) {

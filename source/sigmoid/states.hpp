@@ -44,4 +44,7 @@ nwge::State *editorGameSelect();
 // Editor game menu state
 nwge::State *editorGameMenu(const nwge::StringView &gameName);
 
+// Editor story scene state
+nwge::State *editorStoryScene(const nwge::StringView &gameName, const nwge::StringView &sceneName);
+
 } // namespace sigmoid

@@ -32,6 +32,8 @@ struct Actor {
   glm::ivec2 sheetSize;
 
   bool load(const nwge::StringView &actorID, const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject() const;
 };
 
 struct Sprite {
@@ -69,6 +71,8 @@ struct SpriteCommand {
   glm::vec2 size{-1, -1};
 
   bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject(const StoryScene &scene) const;
 };
 
 struct SpeakCommand {
@@ -77,12 +81,16 @@ struct SpeakCommand {
   ssize portrait = -1;
 
   bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject(const StoryScene &scene) const;
 };
 
 struct WaitCommand {
   float duration = 0.0f;
 
   bool load(const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject() const;
 };
 
 struct BackgroundCommand {
@@ -92,6 +100,8 @@ struct BackgroundCommand {
   ssize music = -1;
 
   bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject(const StoryScene &scene) const;
 };
 
 struct Command {
@@ -100,6 +110,9 @@ struct Command {
   nwge::Maybe<SpeakCommand> speak;
   nwge::Maybe<WaitCommand> wait;
   nwge::Maybe<BackgroundCommand> background;
+
+  [[nodiscard]]
+  nwge::json::Object toObject(const StoryScene &scene) const;
 };
 
 struct StoryScene {
@@ -110,13 +123,19 @@ struct StoryScene {
   nwge::Array<nwge::String<>> musicTracks;
 
   bool load(const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object toObject() const;
 
 private:
   bool loadActors(const nwge::json::Object &data);
+  [[nodiscard]]
+  nwge::json::Object actorsObject() const;
   bool loadSprites(const nwge::ArrayView<nwge::json::Value> &commandData);
   bool loadBackgrounds(const nwge::ArrayView<nwge::json::Value> &data);
   bool loadMusicTracks(const nwge::ArrayView<nwge::json::Value> &data);
   bool loadCommands(const nwge::ArrayView<nwge::json::Value> &data);
+  [[nodiscard]]
+  nwge::ArrayView<nwge::json::Value> commandsArray() const;
 };
 
 } // namespace sigmoid

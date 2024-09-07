@@ -14,7 +14,7 @@ Game::~Game() = default;
 
 void Game::preload() {
   ScratchString filename = ScratchString::formatted("{}.bndl", name);
-  mBundle
+  bundle
     .load({"games"_sv, filename})
     .nqCustom("GAME.INFO"_sv, *this);
 }

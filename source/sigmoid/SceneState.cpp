@@ -16,20 +16,20 @@ public:
       .load({"sigmoid.bndl"_sv})
       .nqFont("INTER.CFN"_sv, mFont);
 
-    const auto &name = mScene.name();
+    const auto &name = mScene.name;
     if(name.empty()) {
       dialog::error("SceneState"_sv, "No scene selected."_sv);
       return false;
     }
     ScratchArray<char> filename = ScratchString::formatted("{}.scn", name);
     toUpper(filename.view());
-    mGame.bundle()
+    mGame.bundle
       .nqCustom(filename.view(), mScene);
     return true;
   }
 
   bool init() override {
-    switch(mScene.type()) {
+    switch(mScene.type) {
     case SceneField:
       dialog::info("SceneState"_sv,
         "Field scene not implemented yet."_sv);
