@@ -33,13 +33,7 @@ public:
   bool on(Event &evt) override {
     switch(evt.type) {
     case Event::PostLoad:
-      if(mScene.present()) {
-        safeCopyString(mScene->title, mTitleBuf);
-        safeCopyString(mScene->background, mBackgroundBuf);
-        safeCopyString(mScene->music, mMusicBuf);
-        safeCopyString(mScene->next, mNextBuf);
-        mScene.clear();
-      }
+      copySceneInfo();
       break;
     default:
       break;
@@ -88,11 +82,17 @@ private:
   }
 
   void copySceneInfo() {
-    safeCopyString(mScene->title, mTitleBuf);
-    safeCopyString(mScene->background, mBackgroundBuf);
-    safeCopyString(mScene->music, mMusicBuf);
-    safeCopyString(mScene->next, mNextBuf);
-    mScene.clear();
+    if(mScene.present()) {
+      safeCopyString(mScene->title, mTitleBuf);
+      safeCopyString(mScene->background, mBackgroundBuf);
+      safeCopyString(mScene->music, mMusicBuf);
+      safeCopyString(mScene->next, mNextBuf);
+      mScene.clear();
+    }
+    if(mBackgroundBuf[0] != 0) {
+      mShowBackground = true;
+      mStore.nqLoad(mBackgroundBuf.begin(), mBackground);
+    }
   }
 
   void createSceneInfo() {

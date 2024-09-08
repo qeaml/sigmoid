@@ -21,6 +21,7 @@ public:
   }
 
   bool init() override {
+    copyGameInfo();
     findFiles();
     return true;
   }
@@ -28,16 +29,7 @@ public:
   bool on(Event &evt) override {
     switch(evt.type) {
     case Event::PostLoad:
-      if(mGameInfo.present()) {
-        safeCopyString(mGameInfo->title, mTitleBuf);
-        safeCopyString(mGameInfo->author, mAuthorBuf);
-        safeCopyString(mGameInfo->description, mDescriptionBuf);
-        safeCopyString(mGameInfo->version, mVersionBuf);
-        safeCopyString(mGameInfo->logo, mLogoBuf);
-        safeCopyString(mGameInfo->menuBackground, mMenuBackgroundBuf);
-        safeCopyString(mGameInfo->startScene, mStartSceneBuf);
-        mGameInfo.clear();
-      }
+      copyGameInfo();
       break;
     default:
       break;
@@ -60,7 +52,22 @@ private:
   data::Store mStore;
   String<> mName;
   Maybe<Game> mGameInfo;
+
+  void copyGameInfo() {
+    if(mGameInfo.present()) {
+      safeCopyString(mGameInfo->title, mTitleBuf);
+      safeCopyString(mGameInfo->author, mAuthorBuf);
+      safeCopyString(mGameInfo->description, mDescriptionBuf);
+      safeCopyString(mGameInfo->version, mVersionBuf);
+      safeCopyString(mGameInfo->logo, mLogoBuf);
+      safeCopyString(mGameInfo->menuBackground, mMenuBackgroundBuf);
+      safeCopyString(mGameInfo->startScene, mStartSceneBuf);
+      mGameInfo.clear();
+    }
+  }
+
   Slice<String<>> mScenes{4};
+  ssize mSelectedScene = -1;
   Slice<String<>> mAssets{4};
   ssize mSelectedAsset = -1;
 
@@ -97,20 +104,49 @@ private:
     }
 
     if(ImGui::BeginListBox("##scenes")) {
-      for(auto &scene: mScenes) {
-        ImGui::Selectable(scene.begin());
+      for(usize i = 0; i < mScenes.size(); ++i) {
+        auto &scene = mScenes[i];
+        auto idx = saturate_cast<ssize>(i);
+        if(ImGui::Selectable(scene.begin(), mSelectedScene == idx)) {
+          mSelectedScene = idx;
+        }
       }
       ImGui::EndListBox();
     }
 
-    static std::array<char, cBufSize> sNameBuf{};
-    ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize);
-    if(ImGui::Button("Create Story Scene")) {
-      swapStatePtr(editorStoryScene(mName, sNameBuf.begin()));
-    }
-    ImGui::SameLine();
-    if(ImGui::Button("Create Field Scene")) {
-      // TODO
+    if(mSelectedScene != -1) {
+      const auto &scene = mScenes[mSelectedScene];
+      ImGui::Text("Selected: %s", scene.begin());
+      if(ImGui::Button("Edit")) {
+        swapStatePtr(editorStoryScene(mName, scene.view()));
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Deselect")) {
+        mSelectedScene = -1;
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Delete")) {
+        auto selected = scene.view();
+        data::nqDelete(mStore.path().join({selected}).ext("SCN"_sv));
+        Slice<String<>> newScenes{mScenes.size() - 1};
+        for(const auto &asset: mScenes) {
+          if(asset.view() != selected) {
+            newScenes.push(asset);
+          }
+        }
+        mScenes = {newScenes.view()};
+        mSelectedScene = -1;
+      }
+    } else {
+      static std::array<char, cBufSize> sNameBuf{};
+      ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize);
+      if(ImGui::Button("Create Story Scene")) {
+        swapStatePtr(editorStoryScene(mName, sNameBuf.begin()));
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Create Field Scene")) {
+        // TODO
+      }
     }
 
     ImGui::End();
