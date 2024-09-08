@@ -1,6 +1,7 @@
 #include "Scene.hpp"
 #include <nwge/bndl/tree.h>
 #include <nwge/dialog.hpp>
+#include <nwge/json/Schema.hpp>
 
 using namespace nwge;
 
@@ -44,111 +45,64 @@ bool Scene::load(data::RW &file) {
       json::errorMessage(res.error));
     return false;
   }
-  if(!res.value->isObject()) {
+
+  auto maybeRoot = json::Schema::object(*res.value);
+  if(!maybeRoot.present()) {
     dialog::error("Failure"_sv,
-      "Could not parse scene {}:\n"
+      "Could not parse scene {}\n"
       "Expected object.",
       name);
     return false;
   }
-  const auto &obj = res.value->object();
 
-  const auto *titleVal = obj.get("title"_sv);
-  if(titleVal == nullptr) {
+  auto maybeTitle = maybeRoot->expectStringField("title"_sv);
+  if(!maybeTitle.present()) {
     dialog::warning("Warning",
       "Could not find title in scene {}, fallback will be used.",
       name);
     title = name;
   } else {
-    if(!titleVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse scene {}:\n"
-        "Expected string for title.",
-        name);
-      return false;
-    }
-    title = titleVal->string();
+    title = *maybeTitle;
   }
 
-  const auto *backgroundVal = obj.get("background"_sv);
-  if(backgroundVal == nullptr) {
-    dialog::warning("Warning",
-      "Could not find background in scene {}, fallback will be used.",
-      name);
-  } else {
-    if(!backgroundVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse scene {}:\n"
-        "Expected string for background.",
-        name);
-      return false;
-    }
-    background = backgroundVal->string();
+  auto maybeBackground = maybeRoot->expectStringField("background"_sv);
+  if(maybeBackground.present()) {
+    background = *maybeBackground;
   }
 
-  const auto *musicVal = obj.get("music"_sv);
-  if(musicVal == nullptr) {
-    dialog::warning("Warning",
-      "Could not find music in scene {}, fallback will be used.",
-      name);
-  } else {
-    if(!musicVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse scene {}:\n"
-        "Expected string for music.",
-        name);
-      return false;
-    }
-    music = musicVal->string();
+  auto maybeMusic = maybeRoot->expectStringField("music"_sv);
+  if(maybeMusic.present()) {
+    music = *maybeMusic;
   }
 
-  const auto *nextVal = obj.get("next"_sv);
-  if(nextVal == nullptr) {
-    dialog::warning("Warning",
-      "Could not find next in scene {}, fallback will be used.",
-      name);
-  } else {
-    if(!nextVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse scene {}:\n"
-        "Expected string for next.",
-        name);
-      return false;
-    }
-    next = nextVal->string();
+  auto maybeNext =  maybeRoot->expectStringField("next"_sv);
+  if(maybeNext.present()) {
+    next = *maybeNext;
   }
 
-  const auto *typeVal = obj.get("type"_sv);
-  if(typeVal == nullptr) {
+  auto maybeType = maybeRoot->expectStringField("type"_sv);
+  if(!maybeType.present()) {
     dialog::error("Failure"_sv,
       "Could not parse scene {}:\n"
       "Could not find type.",
       name);
     return false;
   }
-  if(!typeVal->isString()) {
-    dialog::error("Failure"_sv,
-      "Could not parse scene {}:\n"
-      "Expected string for type.",
-      name);
-    return false;
-  }
 
-  const auto &typeName = typeVal->string();
-  if(typeName.equalsIgnoreCase("field"_sv)) {
+  if(maybeType->equalsIgnoreCase("field"_sv)) {
     type = SceneField;
     // TODO: FieldScene loading
-  } else if(typeName.equalsIgnoreCase("story"_sv)) {
+  } else if(maybeType->equalsIgnoreCase("story"_sv)) {
     type = SceneStory;
     story.emplace();
-    if(!story->load(obj)) {
+    if(!story->load(*maybeRoot)) {
       return false;
     }
   } else {
     dialog::error("Failure"_sv,
       "Could not parse scene {}:\n"
       "Unknown scene type {}.",
-      name, typeName);
+      name, maybeType);
     return false;
   }
   return true;

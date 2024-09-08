@@ -10,6 +10,7 @@ A scene with a story.
 #include <nwge/common/maybe.hpp>
 #include <nwge/common/string.hpp>
 #include <nwge/json.hpp>
+#include <nwge/json/Schema.hpp>
 #include <nwge/render/Texture.hpp>
 #include <nwge/render/Vertex.hpp>
 
@@ -70,7 +71,7 @@ struct SpriteCommand {
   glm::vec2 pos{-1, -1};
   glm::vec2 size{-1, -1};
 
-  bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject(const StoryScene &scene) const;
 };
@@ -80,7 +81,7 @@ struct SpeakCommand {
   ssize actor = -1;
   ssize portrait = -1;
 
-  bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject(const StoryScene &scene) const;
 };
@@ -88,7 +89,7 @@ struct SpeakCommand {
 struct WaitCommand {
   float duration = 0.0f;
 
-  bool load(const nwge::json::Object &data);
+  bool load(nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject() const;
 };
@@ -99,7 +100,7 @@ struct BackgroundCommand {
   ssize image = -1;
   ssize music = -1;
 
-  bool load(const struct StoryScene &scene, const nwge::json::Object &data);
+  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject(const StoryScene &scene) const;
 };
@@ -122,18 +123,17 @@ struct StoryScene {
   nwge::Array<nwge::String<>> bgImages;
   nwge::Array<nwge::String<>> musicTracks;
 
-  bool load(const nwge::json::Object &data);
+  bool load(nwge::json::Schema &root);
   [[nodiscard]]
   nwge::json::Object toObject() const;
 
 private:
-  bool loadActors(const nwge::json::Object &data);
+  bool loadActors(nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object actorsObject() const;
-  bool loadSprites(const nwge::ArrayView<nwge::json::Value> &commandData);
-  bool loadBackgrounds(const nwge::ArrayView<nwge::json::Value> &data);
-  bool loadMusicTracks(const nwge::ArrayView<nwge::json::Value> &data);
-  bool loadCommands(const nwge::ArrayView<nwge::json::Value> &data);
+  bool loadSprites(nwge::json::Schema data);
+  bool loadBackgrounds(nwge::json::Schema data);
+  bool loadCommands(nwge::json::Schema data);
   [[nodiscard]]
   nwge::ArrayView<nwge::json::Value> commandsArray() const;
 };

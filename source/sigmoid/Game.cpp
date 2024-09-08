@@ -1,6 +1,8 @@
 #include "Game.hpp"
 #include <nwge/dialog.hpp>
 #include <nwge/json.hpp>
+#include <nwge/json/builder.hpp>
+#include <nwge/json/Schema.hpp>
 
 using namespace nwge;
 
@@ -45,132 +47,86 @@ bool Game::load(data::RW &file) {
       json::errorMessage(res.error));
     return false;
   }
-  if(!res.value->isObject()) {
+
+
+  auto root = json::Schema::object(*res.value);
+  if(!root.present()) {
     dialog::error("Failure"_sv,
       "Could not parse GAME.INFO for {}:\n"
       "Expected object.",
       name);
     return false;
   }
-  const auto &obj = res.value->object();
 
-  const auto *titleVal = obj.get("title"_sv);
-  if(titleVal == nullptr) {
+  auto maybeTitle = root->expectStringField("title"_sv);
+  if(!maybeTitle.present()) {
     dialog::warning("Warning",
       "Could not find title in GAME.INFO, fallback will be used.");
     title = name;
   } else {
-    if(!titleVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for title.",
-        name);
-      return false;
-    }
-    title = titleVal->string();
+    title = *maybeTitle;
   }
 
-  const auto *authorVal = obj.get("author"_sv);
-  if(authorVal == nullptr) {
+  auto maybeAuthor = root->expectStringField("author"_sv);
+  if(!maybeAuthor.present()) {
     dialog::warning("Warning",
       "Could not find author in GAME.INFO, fallback will be used.");
     author = "Unknown"_sv;
   } else {
-    if(!authorVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for author.",
-        name);
-      return false;
-    }
-    author = authorVal->string();
+    author = *maybeAuthor;
   }
 
-  const auto *descriptionVal = obj.get("description"_sv);
-  if(descriptionVal == nullptr) {
+  auto maybeDescription = root->expectStringField("description"_sv);
+  if(!maybeDescription.present()) {
     dialog::warning("Warning",
       "Could not find description in GAME.INFO, fallback will be used.");
     description = "No description available."_sv;
   } else {
-    if(!descriptionVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for description.",
-        name);
-      return false;
-    }
-    description = descriptionVal->string();
+    description = *maybeDescription;
   }
 
-  const auto *versionVal = obj.get("version"_sv);
-  if(versionVal == nullptr) {
+  auto maybeVersion = root->expectStringField("version"_sv);
+  if(!maybeVersion.present()) {
     dialog::warning("Warning",
       "Could not find version in GAME.INFO, fallback will be used.");
     version = "0.0.0"_sv;
   } else {
-    if(!versionVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for version.",
-        name);
-      return false;
-    }
-    version = versionVal->string();
+    version = *maybeVersion;
+  }
+  auto maybeLogo = root->expectStringField("logo"_sv);
+  if(maybeLogo.present()) {
+    logo = *maybeLogo;
   }
 
-  const auto *logoVal = obj.get("logo"_sv);
-  if(logoVal != nullptr) {
-    if(!logoVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for logo.",
-        name);
-      return false;
-    }
-    logo = logoVal->string();
+  auto maybeBackground = root->expectStringField("menu_background"_sv);
+  if(!maybeBackground.present()) {
+    dialog::warning("Warning",
+      "Could not find background in GAME.INFO, fallback will be used.");
+  } else {
+    menuBackground = *maybeBackground;
   }
 
-  const auto *menuBackgroundVal = obj.get("menu_background"_sv);
-  if(menuBackgroundVal != nullptr) {
-    if(!menuBackgroundVal->isString()) {
-      dialog::error("Failure"_sv,
-        "Could not parse GAME.INFO for {}:\n"
-        "Expected string for menu_background.",
-        name);
-      return false;
-    }
-    menuBackground = menuBackgroundVal->string();
-  }
-
-  const auto *startSceneVal = obj.get("start_scene"_sv);
-  if(startSceneVal == nullptr) {
+  auto maybeStartScene = root->expectStringField("start_scene"_sv);
+  if(!maybeStartScene.present()) {
     dialog::error("Failure",
     "Could not find start_scene in GAME.INFO.");
     return false;
   }
-  if(!startSceneVal->isString()) {
-    dialog::error("Failure"_sv,
-      "Could not parse GAME.INFO for {}:\n"
-      "Expected string for start_scene.",
-      name);
-    return false;
-  }
-  startScene = startSceneVal->string();
+  startScene = *maybeStartScene;
 
   return true;
 }
 
 bool Game::save(data::RW &file) {
-  static constexpr usize cPairCount = 7;
-  Slice<json::Object::Pair> pairs{cPairCount};
-  pairs.push({"title"_sv, title.view()});
-  pairs.push({"author"_sv, author.view()});
-  pairs.push({"description"_sv, description.view()});
-  pairs.push({"version"_sv, version.view()});
-  pairs.push({"logo"_sv, logo.view()});
-  pairs.push({"menu_background"_sv, menuBackground.view()});
-  pairs.push({"start_scene"_sv, startScene.view()});
-  auto str = json::encode(json::Object{pairs.view()});
+  json::ObjectBuilder builder;
+  builder.set("title"_sv, title.view());
+  builder.set("author"_sv, author.view());
+  builder.set("description"_sv, description.view());
+  builder.set("version"_sv, version.view());
+  builder.set("logo"_sv, logo.view());
+  builder.set("menu_background"_sv, menuBackground.view());
+  builder.set("start_scene"_sv, startScene.view());
+  auto str = json::encode(builder.finish());
   return file.write(str.view());
 }
 

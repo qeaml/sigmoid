@@ -75,7 +75,7 @@ private:
       safeCopyString(mGameInfo->description, mDescriptionBuf);
       safeCopyString(mGameInfo->version, mVersionBuf);
       safeCopyString(mGameInfo->logo, mLogoBuf);
-      if(mGameInfo->menuBackground[0] == 0) {
+      if(mGameInfo->menuBackground.empty()) {
         mShowBackground = false;
       } else if(mGameInfo->menuBackground[0] != mMenuBackgroundBuf[0]) {
         mShowBackground = true;
