@@ -1,5 +1,6 @@
 #include "states.hpp"
 #include "imgui/imgui.hpp"
+#include <nwge/common/cast.hpp>
 #include <nwge/data/file.hpp>
 #include <nwge/data/store.hpp>
 #include <nwge/render/window.hpp>
@@ -61,6 +62,7 @@ private:
   Maybe<Game> mGameInfo;
   Slice<String<>> mScenes{4};
   Slice<String<>> mAssets{4};
+  ssize mSelectedAsset = -1;
 
   render::Texture mAssetTexture;
 
@@ -121,10 +123,34 @@ private:
     }
 
     if(ImGui::BeginListBox("##assets")) {
-      for(auto &asset: mAssets) {
-        ImGui::Selectable(asset.begin());
+      for(usize i = 0; i < mAssets.size(); ++i) {
+        auto &asset = mAssets[i];
+        auto idx = saturate_cast<ssize>(i);
+        if(ImGui::Selectable(asset.begin(), mSelectedAsset == idx)) {
+          mSelectedAsset = idx;
+        }
       }
       ImGui::EndListBox();
+    }
+
+    if(mSelectedAsset != -1) {
+      ImGui::Text("Selected: %s", mAssets[mSelectedAsset].begin());
+      if(ImGui::Button("Deselect")) {
+        mSelectedAsset = -1;
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Delete")) {
+        auto selected = mAssets[mSelectedAsset].view();
+        data::nqDelete(mStore.path().join({selected}));
+        Slice<String<>> newAssets{mAssets.size() - 1};
+        for(const auto &asset: mAssets) {
+          if(asset.view() != selected) {
+            newAssets.push(asset);
+          }
+        }
+        mAssets = {newAssets.view()};
+        mSelectedAsset = -1;
+      }
     }
 
     if(ImGui::Button("Import")) {
