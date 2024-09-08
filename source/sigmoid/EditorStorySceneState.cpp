@@ -1,4 +1,5 @@
 #include "states.hpp"
+#include "AssetManager.hpp"
 #include "imgui/imgui.hpp"
 #include <nwge/data/file.hpp>
 #include <nwge/data/store.hpp>
@@ -12,7 +13,7 @@ namespace sigmoid {
 class EditorStorySceneState final: public State {
 public:
   EditorStorySceneState(const StringView &gameName, const StringView &sceneName)
-    : mGameName(gameName), mSceneName(sceneName), mStore(gameName)
+    : mAssets(gameName), mGameName(gameName), mSceneName(sceneName), mStore(gameName)
   {
     ScratchArray<char> filename = ScratchString::formatted("{}.SCN", mSceneName);
     toUpper(filename.view());
@@ -22,6 +23,7 @@ public:
 
   bool preload() override {
     nqLoadSceneInfo();
+    mAssets.discover();
     return true;
   }
 
@@ -43,6 +45,7 @@ public:
 
   bool tick([[maybe_unused]] f32 delta) override {
     sceneWindow();
+    mAssets.window();
     return true;
   }
 
@@ -60,6 +63,8 @@ public:
 private:
   render::AspectRatio m1x1{1, 1};
   render::AspectRatio m4x3{4, 3};
+
+  AssetManager mAssets;
 
   String<> mGameName;
   String<> mSceneName;

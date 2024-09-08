@@ -1,4 +1,5 @@
 #include "states.hpp"
+#include "AssetManager.hpp"
 #include "imgui/imgui.hpp"
 #include <nwge/common/cast.hpp>
 #include <nwge/data/file.hpp>
@@ -13,11 +14,12 @@ namespace sigmoid {
 class EditorGameMenuState final: public State {
 public:
   EditorGameMenuState(const nwge::StringView &gameName)
-    : mStore(gameName), mName(gameName)
+    : mStore(gameName), mName(gameName), mAssets(gameName)
   {}
 
   bool preload() override {
     nqLoadGameInfo();
+    mAssets.discover();
     return true;
   }
 
@@ -45,7 +47,7 @@ public:
   bool tick([[maybe_unused]] f32 delta) override {
     gameInfoWindow();
     sceneListWindow();
-    assetListWindow();
+    mAssets.window();
     return true;
   }
 
@@ -89,15 +91,13 @@ private:
 
   Slice<String<>> mScenes{4};
   ssize mSelectedScene = -1;
-  Slice<String<>> mAssets{4};
-  ssize mSelectedAsset = -1;
+  AssetManager mAssets;
 
   bool mShowBackground = false;
   render::Texture mBackground;
 
   void findFiles() {
     mScenes.clear();
-    mAssets.clear();
     for(auto iter = mStore.path().iterate(); iter; ++iter) {
       auto path = *iter;
       if(path.isDir()) {
@@ -113,9 +113,6 @@ private:
         mScenes.push(StringView(name.view()));
         continue;
       }
-      ScratchArray<char> name = filename;
-      toUpper(name.view());
-      mAssets.push(StringView(name.view()));
     }
   }
 
@@ -168,58 +165,6 @@ private:
       ImGui::SameLine();
       if(ImGui::Button("Create Field Scene")) {
         // TODO
-      }
-    }
-
-    ImGui::End();
-  }
-
-  void assetListWindow() {
-    if(!ImGui::Begin("Asset List", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-      ImGui::End();
-      return;
-    }
-
-    if(ImGui::BeginListBox("##assets")) {
-      for(usize i = 0; i < mAssets.size(); ++i) {
-        auto &asset = mAssets[i];
-        auto idx = saturate_cast<ssize>(i);
-        if(ImGui::Selectable(asset.begin(), mSelectedAsset == idx)) {
-          mSelectedAsset = idx;
-        }
-      }
-      ImGui::EndListBox();
-    }
-
-    if(mSelectedAsset != -1) {
-      ImGui::Text("Selected: %s", mAssets[mSelectedAsset].begin());
-      if(ImGui::Button("Deselect")) {
-        mSelectedAsset = -1;
-      }
-      ImGui::SameLine();
-      if(ImGui::Button("Delete")) {
-        auto selected = mAssets[mSelectedAsset].view();
-        data::nqDelete(mStore.path().join({selected}));
-        Slice<String<>> newAssets{mAssets.size() - 1};
-        for(const auto &asset: mAssets) {
-          if(asset.view() != selected) {
-            newAssets.push(asset);
-          }
-        }
-        mAssets = {newAssets.view()};
-        mSelectedAsset = -1;
-      }
-    }
-
-    if(ImGui::Button("Import")) {
-      auto maybePath = dialog::FilePicker{}
-        .title("Import asset"_sv)
-        .openOne();
-      if(maybePath.present()) {
-        ScratchArray<char> name = maybePath->filename();
-        toUpper(name.view());
-        data::nqCopy(*maybePath, mStore.path().join({name.view()}));
-        mAssets.push(StringView(name.view()));
       }
     }
 
