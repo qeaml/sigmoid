@@ -3,6 +3,7 @@
 #include <nwge/common/cast.hpp>
 #include <nwge/data/file.hpp>
 #include <nwge/data/store.hpp>
+#include <nwge/render/AspectRatio.hpp>
 #include <nwge/render/window.hpp>
 
 using namespace nwge;
@@ -23,6 +24,10 @@ public:
   bool init() override {
     copyGameInfo();
     findFiles();
+    if(mMenuBackgroundBuf[0] != 0) {
+      mShowBackground = true;
+      mStore.nqLoad(mMenuBackgroundBuf.begin(), mBackground);
+    }
     return true;
   }
 
@@ -46,9 +51,19 @@ public:
 
   void render() const override {
     render::clear({0, 0, 0});
+    if(mShowBackground) {
+      m4x3.rect({
+        {0, 0, 0.9},
+        {1, 1},
+        mBackground.id
+      }).draw();
+    }
   }
 
 private:
+  render::AspectRatio m1x1{1, 1};
+  render::AspectRatio m4x3{4, 3};
+
   data::Store mStore;
   String<> mName;
   Maybe<Game> mGameInfo;
@@ -60,6 +75,12 @@ private:
       safeCopyString(mGameInfo->description, mDescriptionBuf);
       safeCopyString(mGameInfo->version, mVersionBuf);
       safeCopyString(mGameInfo->logo, mLogoBuf);
+      if(mGameInfo->menuBackground[0] == 0) {
+        mShowBackground = false;
+      } else if(mGameInfo->menuBackground[0] != mMenuBackgroundBuf[0]) {
+        mShowBackground = true;
+        mStore.nqLoad(mGameInfo->menuBackground, mBackground);
+      }
       safeCopyString(mGameInfo->menuBackground, mMenuBackgroundBuf);
       safeCopyString(mGameInfo->startScene, mStartSceneBuf);
       mGameInfo.clear();
@@ -71,7 +92,8 @@ private:
   Slice<String<>> mAssets{4};
   ssize mSelectedAsset = -1;
 
-  render::Texture mAssetTexture;
+  bool mShowBackground = false;
+  render::Texture mBackground;
 
   void findFiles() {
     mScenes.clear();

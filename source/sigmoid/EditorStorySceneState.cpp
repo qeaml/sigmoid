@@ -84,14 +84,16 @@ private:
   void copySceneInfo() {
     if(mScene.present()) {
       safeCopyString(mScene->title, mTitleBuf);
+      if(mScene->background[0] == 0) {
+        mShowBackground = false;
+      } else if(mScene->background[0] != mBackgroundBuf[0]) {
+        mShowBackground = true;
+        mStore.nqLoad(mScene->background, mBackground);
+      }
       safeCopyString(mScene->background, mBackgroundBuf);
       safeCopyString(mScene->music, mMusicBuf);
       safeCopyString(mScene->next, mNextBuf);
       mScene.clear();
-    }
-    if(mBackgroundBuf[0] != 0) {
-      mShowBackground = true;
-      mStore.nqLoad(mBackgroundBuf.begin(), mBackground);
     }
   }
 
