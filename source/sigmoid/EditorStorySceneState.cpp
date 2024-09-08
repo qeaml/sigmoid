@@ -1,3 +1,4 @@
+#include "SceneManager.hpp"
 #include "states.hpp"
 #include "AssetManager.hpp"
 #include "imgui/imgui.hpp"
@@ -13,7 +14,7 @@ namespace sigmoid {
 class EditorStorySceneState final: public State {
 public:
   EditorStorySceneState(const StringView &gameName, const StringView &sceneName)
-    : mAssets(gameName), mGameName(gameName), mSceneName(sceneName), mStore(gameName)
+    : mAssets(gameName), mScenes(gameName), mGameName(gameName), mSceneName(sceneName), mStore(gameName)
   {
     ScratchArray<char> filename = ScratchString::formatted("{}.SCN", mSceneName);
     toUpper(filename.view());
@@ -24,6 +25,7 @@ public:
   bool preload() override {
     nqLoadSceneInfo();
     mAssets.discover();
+    mScenes.discover();
     return true;
   }
 
@@ -46,6 +48,7 @@ public:
   bool tick([[maybe_unused]] f32 delta) override {
     sceneWindow();
     mAssets.window();
+    mScenes.window();
     return true;
   }
 
@@ -65,6 +68,7 @@ private:
   render::AspectRatio m4x3{4, 3};
 
   AssetManager mAssets;
+  SceneManager mScenes;
 
   String<> mGameName;
   String<> mSceneName;

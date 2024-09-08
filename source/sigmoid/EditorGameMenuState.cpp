@@ -1,3 +1,5 @@
+#include "Scene.hpp"
+#include "SceneManager.hpp"
 #include "states.hpp"
 #include "AssetManager.hpp"
 #include "imgui/imgui.hpp"
@@ -14,22 +16,18 @@ namespace sigmoid {
 class EditorGameMenuState final: public State {
 public:
   EditorGameMenuState(const nwge::StringView &gameName)
-    : mStore(gameName), mName(gameName), mAssets(gameName)
+    : mStore(gameName), mName(gameName), mScenes(gameName), mAssets(gameName)
   {}
 
   bool preload() override {
     nqLoadGameInfo();
+    mScenes.discover();
     mAssets.discover();
     return true;
   }
 
   bool init() override {
     copyGameInfo();
-    findFiles();
-    if(mMenuBackgroundBuf[0] != 0) {
-      mShowBackground = true;
-      mStore.nqLoad(mMenuBackgroundBuf.begin(), mBackground);
-    }
     return true;
   }
 
@@ -46,7 +44,7 @@ public:
 
   bool tick([[maybe_unused]] f32 delta) override {
     gameInfoWindow();
-    sceneListWindow();
+    mScenes.window();
     mAssets.window();
     return true;
   }
@@ -89,87 +87,11 @@ private:
     }
   }
 
-  Slice<String<>> mScenes{4};
-  ssize mSelectedScene = -1;
+  SceneManager mScenes;
   AssetManager mAssets;
 
   bool mShowBackground = false;
   render::Texture mBackground;
-
-  void findFiles() {
-    mScenes.clear();
-    for(auto iter = mStore.path().iterate(); iter; ++iter) {
-      auto path = *iter;
-      if(path.isDir()) {
-        continue;
-      }
-      const auto &filename = path.filename();
-      if(filename.equalsIgnoreCase("GAME.INFO"_sv)) {
-        continue;
-      }
-      if(filename.endsWithIgnoreCase(".SCN"_sv)) {
-        ScratchArray<char> name = filename.trimSuffixIgnoreCase(".SCN"_sv);
-        toUpper(name.view());
-        mScenes.push(StringView(name.view()));
-        continue;
-      }
-    }
-  }
-
-  void sceneListWindow() {
-    if(!ImGui::Begin("Scene List", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-      ImGui::End();
-      return;
-    }
-
-    if(ImGui::BeginListBox("##scenes")) {
-      for(usize i = 0; i < mScenes.size(); ++i) {
-        auto &scene = mScenes[i];
-        auto idx = saturate_cast<ssize>(i);
-        if(ImGui::Selectable(scene.begin(), mSelectedScene == idx)) {
-          mSelectedScene = idx;
-        }
-      }
-      ImGui::EndListBox();
-    }
-
-    if(mSelectedScene != -1) {
-      const auto &scene = mScenes[mSelectedScene];
-      ImGui::Text("Selected: %s", scene.begin());
-      if(ImGui::Button("Edit")) {
-        swapStatePtr(editorStoryScene(mName, scene.view()));
-      }
-      ImGui::SameLine();
-      if(ImGui::Button("Deselect")) {
-        mSelectedScene = -1;
-      }
-      ImGui::SameLine();
-      if(ImGui::Button("Delete")) {
-        auto selected = scene.view();
-        data::nqDelete(mStore.path().join({selected}).ext("SCN"_sv));
-        Slice<String<>> newScenes{mScenes.size() - 1};
-        for(const auto &asset: mScenes) {
-          if(asset.view() != selected) {
-            newScenes.push(asset);
-          }
-        }
-        mScenes = {newScenes.view()};
-        mSelectedScene = -1;
-      }
-    } else {
-      static std::array<char, cBufSize> sNameBuf{};
-      ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize);
-      if(ImGui::Button("Create Story Scene")) {
-        swapStatePtr(editorStoryScene(mName, sNameBuf.begin()));
-      }
-      ImGui::SameLine();
-      if(ImGui::Button("Create Field Scene")) {
-        // TODO
-      }
-    }
-
-    ImGui::End();
-  }
 
   template<usize Size>
   static inline void safeCopyString(const nwge::StringView &src, std::array<char, Size> &dst) {
