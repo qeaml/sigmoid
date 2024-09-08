@@ -28,7 +28,7 @@ s32 main(s32 argc, CStr *argv) {
 
   StringView gameName = cli::pos(0);
   if(cli::flag("edit")) {
-    startPtr(editorGameMenu(gameName), {
+    startPtr(editorState(gameName), {
       .appName = "Sigmoid Engine Editor"_sv,
     });
   } else {

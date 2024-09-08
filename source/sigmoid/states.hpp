@@ -6,8 +6,10 @@ states.hpp
 State functions
 */
 
+#include "AssetManager.hpp"
 #include "Game.hpp"
 #include "Scene.hpp"
+#include "SceneManager.hpp"
 #include <nwge/state.hpp>
 
 namespace sigmoid {
@@ -38,13 +40,22 @@ nwge::SubState *fieldScene(SceneStateData &data);
 // Sub state for story scenes.
 nwge::SubState *storyScene(SceneStateData &data);
 
-// Editor game selection state
-nwge::State *editorGameSelect();
+struct EditorInfo {
+  nwge::String<> gameName;
+  nwge::data::Store store;
+  AssetManager assets;
+  SceneManager scenes;
+  Game game;
+};
 
-// Editor game menu state
-nwge::State *editorGameMenu(const nwge::StringView &gameName);
+nwge::State *editorState(const nwge::StringView &gameName);
+nwge::SubState *gameInfoEditor(EditorInfo &info);
+nwge::SubState *sceneEditor(EditorInfo &info, const nwge::StringView &sceneName, SceneType defaultType = SceneInvalid);
 
-// Editor story scene state
-nwge::State *editorStoryScene(const nwge::StringView &gameName, const nwge::StringView &sceneName);
+inline void setEditorSubState(nwge::SubState *state) {
+  nwge::swapSubStatePtr(state, {
+    .tickParent = true,
+  });
+}
 
 } // namespace sigmoid

@@ -18,7 +18,7 @@ public:
   void discover();
   [[nodiscard]]
   nwge::ArrayView<const nwge::String<>> scenes() const;
-  void window();
+  void window(struct EditorInfo &info);
 
 private:
   static constexpr usize cBufSize = 40;

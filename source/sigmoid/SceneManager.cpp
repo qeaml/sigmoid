@@ -38,7 +38,7 @@ ArrayView<const String<>> SceneManager::scenes() const {
   return mScenes.view();
 }
 
-void SceneManager::window() {
+void SceneManager::window(EditorInfo &info) {
   if(!ImGui::Begin("Scene Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::End();
     return;
@@ -59,7 +59,7 @@ void SceneManager::window() {
     const auto &scene = mScenes[mSelectedScene];
     ImGui::Text("Selected: %s", scene.begin());
     if(ImGui::Button("Edit")) {
-      swapStatePtr(editorStoryScene(mGameName, scene.view()));
+      setEditorSubState(sceneEditor(info, scene));
     }
     ImGui::SameLine();
     if(ImGui::Button("Deselect")) {
@@ -82,7 +82,7 @@ void SceneManager::window() {
     static std::array<char, cBufSize> sNameBuf{};
     ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize);
     if(ImGui::Button("Create Story Scene")) {
-      swapStatePtr(editorStoryScene(mGameName, sNameBuf.begin()));
+      setEditorSubState(sceneEditor(info, sNameBuf.begin()));
     }
     ImGui::SameLine();
     if(ImGui::Button("Create Field Scene")) {
