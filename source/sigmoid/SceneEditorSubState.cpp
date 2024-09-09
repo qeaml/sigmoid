@@ -43,6 +43,7 @@ public:
     switch(mScene.type) {
     case SceneStory:
       actorWindow();
+      commandWindow();
       break;
     default:
       break;
@@ -150,6 +151,29 @@ private:
         src.sheetHeight
       };
     }
+    mScene.story->commands = {mCommands.size()};
+    for(usize i = 0; i < mCommands.size(); ++i) {
+      auto &command = mScene.story->commands[i];
+      const auto &src = mCommands[i];
+      command.code = src.code;
+      switch(src.code) {
+      case CommandSprite:
+        command.sprite.emplace();
+        break;
+      case CommandSpeak:
+        command.speak.emplace();
+        break;
+      case CommandWait:
+        command.wait.emplace();
+        command.wait->duration = src.waitTime;
+        break;
+      case CommandBackground:
+        command.background.emplace();
+        break;
+      default:
+        break;
+      }
+    }
   }
 
   render::AspectRatio m1x1{1, 1};
@@ -252,6 +276,145 @@ private:
     }
 
     ImGui::End();
+  }
+
+  struct CommandInfo {
+    CommandCode code = CommandInvalid;
+
+    // used by sprite command
+    std::array<char, cBufSize> idBuf{};
+    bool shown = true;
+    bool move = false;
+    f32 posX = 0;
+    f32 posY = 0;
+    bool scale = false;
+    f32 sizeX = 0;
+    f32 sizeY = 0;
+
+    // used by speak & sprite
+    std::array<char, cBufSize> actorBuf{};
+    s32 portraitX = 0;
+    s32 portraitY = 0;
+
+    // used by speak
+    std::array<char, cBufSize> textBuf{};
+
+    // used by wait
+    f32 waitTime = 0;
+
+    // used by background
+    std::array<char, cBufSize> backgroundBuf{};
+    std::array<char, cBufSize> musicBuf{};
+  };
+  Slice<CommandInfo> mCommands{4};
+  ssize mSelectedCommand = -1;
+
+  void commandWindow() {
+    if(!ImGui::Begin("Commands", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::End();
+      return;
+    }
+
+    if(ImGui::BeginListBox("##commands")) {
+      for(usize i = 0; i < mCommands.size(); ++i) {
+        CommandInfo &command = mCommands[i];
+        auto idx = saturate_cast<ssize>(i);
+        if(ImGui::Selectable(cCommandCodeNames[command.code], idx == mSelectedCommand)) {
+          mSelectedCommand = idx;
+        }
+      }
+      ImGui::EndListBox();
+    }
+
+    if(mSelectedCommand < 0) {
+      if(ImGui::Button("Add Sprite Command")) {
+        mCommands.push({CommandSprite});
+        mSelectedCommand = saturate_cast<ssize>(mCommands.size()) - 1;
+      }
+      if(ImGui::Button("Add Speak Command")) {
+        mCommands.push({CommandSpeak});
+        mSelectedCommand = saturate_cast<ssize>(mCommands.size()) - 1;
+      }
+      if(ImGui::Button("Add Wait Command")) {
+        mCommands.push({CommandWait});
+        mSelectedCommand = saturate_cast<ssize>(mCommands.size()) - 1;
+      }
+      if(ImGui::Button("Add Background Command")) {
+        mCommands.push({CommandBackground});
+        mSelectedCommand = saturate_cast<ssize>(mCommands.size()) - 1;
+      }
+    } else {
+      if(ImGui::Button("Deselect")) {
+        mSelectedCommand = -1;
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Delete")) {
+        Slice<CommandInfo> newCommands(mCommands.size() - 1);
+        for(usize i = 0; i < mCommands.size(); ++i) {
+          auto idx = saturate_cast<ssize>(i);
+          if(idx != mSelectedCommand) {
+            newCommands.push(mCommands[i]);
+          }
+        }
+        mCommands = std::move(newCommands);
+        mSelectedCommand = -1;
+      }
+    }
+
+    if(mSelectedCommand >= 0) {
+      auto &info = mCommands[mSelectedCommand];
+      switch(info.code) {
+      case CommandSprite:
+        spriteCommandOptions(info);
+        break;
+      case CommandSpeak:
+        speakCommandOptions(info);
+        break;
+      case CommandWait:
+        waitCommandOptions(info);
+        break;
+      case CommandBackground:
+        backgroundCommandOptions(info);
+        break;
+      default:
+        break;
+      }
+    }
+
+    ImGui::End();
+  }
+
+  static void spriteCommandOptions(CommandInfo &info) {
+    ImGui::InputText("ID", info.idBuf.data(), cBufSize);
+    ImGui::Checkbox("Shown", &info.shown);
+
+    ImGui::Checkbox("Change Position", &info.move);
+    ImGui::InputFloat("Position X", &info.posX);
+    ImGui::InputFloat("Position Y", &info.posY);
+
+    ImGui::Checkbox("Change Size", &info.scale);
+    ImGui::InputFloat("Size X", &info.sizeX);
+    ImGui::InputFloat("Size Y", &info.sizeY);
+
+    ImGui::InputText("Actor", info.actorBuf.data(), cBufSize);
+    ImGui::InputInt("Portrait X", &info.portraitX);
+    ImGui::InputInt("Portrait Y", &info.portraitY);
+  }
+
+  static void speakCommandOptions(CommandInfo &info) {
+    ImGui::InputText("Actor", info.actorBuf.data(), cBufSize);
+    ImGui::InputInt("Portrait X", &info.portraitX);
+    ImGui::InputInt("Portrait Y", &info.portraitY);
+    ImGui::InputText("Text", info.textBuf.data(), cBufSize);
+  }
+
+  static void waitCommandOptions(CommandInfo &info) {
+    ImGui::InputFloat("Wait Time", &info.waitTime);
+  }
+
+  static void backgroundCommandOptions(CommandInfo &info) {
+    ImGui::InputText("Background", info.backgroundBuf.data(), cBufSize);
+    ImGui::InputText("Music", info.musicBuf.data(), cBufSize);
   }
 };
 

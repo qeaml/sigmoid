@@ -55,6 +55,13 @@ enum CommandCode {
   CommandMax,
 };
 
+static constexpr std::array cCommandCodeNames = {
+  "Sprite",
+  "Speak",
+  "Wait",
+  "Background",
+};
+
 /**
  * @brief Sprite command.
  *
