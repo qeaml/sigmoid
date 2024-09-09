@@ -8,6 +8,7 @@ A scene with a story.
 
 #include <nwge/common/array.hpp>
 #include <nwge/common/maybe.hpp>
+#include <nwge/common/slice.hpp>
 #include <nwge/common/string.hpp>
 #include <nwge/json.hpp>
 #include <nwge/json/Schema.hpp>
@@ -37,15 +38,6 @@ struct Actor {
   nwge::json::Object toObject() const;
 };
 
-struct Sprite {
-  nwge::String<> id;
-  bool shown = false;
-  glm::vec2 pos{0.5, 0.5};
-  glm::vec2 size{-1, -1};
-  ssize actor = -1;
-  ssize portrait = -1;
-};
-
 enum CommandCode {
   CommandInvalid = -1,
   CommandSprite,
@@ -71,24 +63,24 @@ static constexpr std::array cCommandCodeNames = {
  * field is an index into the `StoryScene::mActors` array.
  */
 struct SpriteCommand {
-  usize sprite;
+  nwge::StringView id;
   bool hide = false;
-  ssize actor = -1;
-  ssize portrait = -1;
+  nwge::StringView actor;
+  s32 portrait = -1;
   glm::vec2 pos{-1, -1};
   glm::vec2 size{-1, -1};
 
-  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
+  bool load(struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject(const StoryScene &scene) const;
 };
 
 struct SpeakCommand {
   nwge::String<> text;
-  ssize actor = -1;
-  ssize portrait = -1;
+  nwge::StringView actor;
+  s32 portrait = -1;
 
-  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
+  bool load(struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object toObject(const StoryScene &scene) const;
 };
@@ -102,14 +94,12 @@ struct WaitCommand {
 };
 
 struct BackgroundCommand {
-  bool stopMusic = false;
-  bool removeBackground = false;
-  ssize image = -1;
-  ssize music = -1;
+  nwge::StringView background;
+  nwge::StringView music;
 
-  bool load(const struct StoryScene &scene, nwge::json::Schema &data);
+  bool load(struct StoryScene &scene, nwge::json::Schema &data);
   [[nodiscard]]
-  nwge::json::Object toObject(const StoryScene &scene) const;
+  nwge::json::Object toObject() const;
 };
 
 struct Command {
@@ -124,22 +114,28 @@ struct Command {
 };
 
 struct StoryScene {
-  nwge::Array<Actor> actors;
-  nwge::Array<Sprite> sprites;
+  nwge::Slice<Actor> actors{4};
+  nwge::Slice<nwge::String<>> sprites{4};
+  nwge::Slice<nwge::String<>> backgrounds{4};
+  nwge::Slice<nwge::String<>> musics{4};
   nwge::Array<Command> commands;
-  nwge::Array<nwge::String<>> bgImages;
-  nwge::Array<nwge::String<>> musicTracks;
 
   bool load(nwge::json::Schema &root);
   [[nodiscard]]
   nwge::json::Object toObject() const;
 
+  nwge::StringView ensureSprite(const nwge::StringView &sprite);
+  nwge::StringView ensureActor(const nwge::StringView &actor);
+  Actor *getActor(const nwge::StringView &actor);
+  [[nodiscard]]
+  const Actor *getActor(const nwge::StringView &actor) const;
+  nwge::StringView ensureBackground(const nwge::StringView &background);
+  nwge::StringView ensureMusic(const nwge::StringView &music);
+
 private:
   bool loadActors(nwge::json::Schema &data);
   [[nodiscard]]
   nwge::json::Object actorsObject() const;
-  bool loadSprites(nwge::json::Schema data);
-  bool loadBackgrounds(nwge::json::Schema data);
   bool loadCommands(nwge::json::Schema data);
   [[nodiscard]]
   nwge::ArrayView<nwge::json::Value> commandsArray() const;

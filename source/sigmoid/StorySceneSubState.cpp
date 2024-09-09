@@ -57,7 +57,7 @@ public:
       }).draw();
     }
 
-    if(!mCurrentText.empty()) {
+    if(mCurrentActor != nullptr && !mCurrentText.empty()) {
       renderTextBox();
     }
   }
@@ -82,14 +82,14 @@ private:
   }
 
   void backgroundCmd(const BackgroundCommand &cmd) {
-    if(cmd.removeBackground) {
+    if(cmd.background.empty()) {
       removeBackground();
-    } else if(cmd.image >= 0) {
-      showBackground(mStory.bgImages[cmd.image]);
+    } else {
+      showBackground(cmd.background);
     }
-    if(cmd.stopMusic) {
+    if(cmd.music.empty()) {
       console::warn("Music not yet implemented. (stopMusic)");
-    } else if(cmd.music >= 0) {
+    } else {
       console::warn("Music not yet implemented. (setMusic)");
     }
   }
@@ -126,15 +126,21 @@ private:
     }
   }
 
-  usize mCurrentActor = 0; // only matters if !mCurrentText.empty()
+  const ActorInfo *mCurrentActor = nullptr; // only matters if !mCurrentText.empty()
   usize mActorPortrait = 0;
   StringView mCurrentText;
   usize mTextChars = 0;
   f32 mTextTimer = 0.0f;
 
   void speakCmd(const SpeakCommand &cmd) {
-    if(cmd.actor >= 0) {
-      mCurrentActor = cmd.actor;
+    mCurrentActor = nullptr;
+    if(!cmd.actor.empty()) {
+      for(const auto &actor: mActors) {
+        if(actor.name == cmd.actor) {
+          mCurrentActor = &actor;
+          break;
+        }
+      }
     }
     if(cmd.portrait >= 0) {
       mActorPortrait = cmd.portrait;
@@ -173,8 +179,7 @@ private:
   static constexpr f32 cActorPortraitEndX = 0.95f;
 
   void renderTextBox() const {
-    const auto &actor = mActors[mCurrentActor];
-    const auto &name = actor.name;
+    auto name = mCurrentActor->name.view();
     auto measure = mData.font.measure(name, cActorNameTextHeight);
     glm::vec2 nameBgSize{
       measure.x + 2*cTextMargin, cActorNameBgHeight
@@ -202,8 +207,8 @@ private:
     render::rect(
       actorPortraitPos,
       actorPortraitSize,
-      actor.sheet,
-      actor.sprites[mActorPortrait]
+      mCurrentActor->sheet,
+      mCurrentActor->sprites[mActorPortrait]
     );
   }
 

@@ -15,6 +15,63 @@ namespace sigmoid {
     FAIL(__VA_ARGS__);\
   }
 
+StringView StoryScene::ensureSprite(const StringView &sprite) {
+  for(const auto &oldSprite: sprites) {
+    if(oldSprite.view().equals(sprite)) {
+      return oldSprite.view();
+    }
+  }
+  sprites.push({sprite});
+  return sprites[sprites.size() - 1];
+}
+
+StringView StoryScene::ensureActor(const StringView &actor) {
+  for(const auto &oldActor: actors) {
+    if(oldActor.id.view().equals(actor)) {
+      return oldActor.id.view();
+    }
+  }
+  return {};
+}
+
+Actor *StoryScene::getActor(const StringView &actor) {
+  for(auto &oldActor: actors) {
+    if(oldActor.id.view().equals(actor)) {
+      return &oldActor;
+    }
+  }
+  return nullptr;
+}
+
+const Actor *StoryScene::getActor(const StringView &actor) const {
+  for(const auto &oldActor: actors) {
+    if(oldActor.id.view().equals(actor)) {
+      return &oldActor;
+    }
+  }
+  return nullptr;
+}
+
+StringView StoryScene::ensureBackground(const StringView &background) {
+  for(const auto &oldBackground: backgrounds) {
+    if(oldBackground.view().equals(background)) {
+      return oldBackground.view();
+    }
+  }
+  backgrounds.push({background});
+  return backgrounds[backgrounds.size() - 1];
+}
+
+StringView StoryScene::ensureMusic(const StringView &music) {
+  for(const auto &oldMusic: musics) {
+    if(oldMusic.view().equals(music)) {
+      return oldMusic.view();
+    }
+  }
+  musics.push({music});
+  return musics[musics.size() - 1];
+}
+
 bool StoryScene::load(json::Schema &root) {
   #define FAIL_HEADER "Could not parse story scene"
 
@@ -24,8 +81,6 @@ bool StoryScene::load(json::Schema &root) {
 
   auto maybeCommands = root.expectArrayField("commands"_sv);
   FAIL_IF(!maybeCommands.present(), "Could not find `commands`.");
-  FAIL_IF(!loadSprites(*maybeCommands), "Could not parse `commands`.");
-  FAIL_IF(!loadBackgrounds(*maybeCommands), "Could not parse `commands`.");
   FAIL_IF(!loadCommands(*maybeCommands), "Could not parse `commands`.");
 
   return true;
@@ -37,12 +92,15 @@ bool StoryScene::loadActors(json::Schema &data) {
   #define FAIL_HEADER "Could not parse story scene actors"
 
   auto pairs = data.pairs();
+  if(pairs.size() == 0) {
+    return true;
+  }
   actors = {pairs.size()};
-  usize idx = 0;
   for(const auto &[key, val]: pairs) {
     FAIL_IF(!val.isObject(), "Expected object for actor {}.", key);
     const auto &obj = val.object();
-    auto &actor = actors[idx++];
+    actors.push({});
+    auto &actor = actors[actors.size() - 1];
     FAIL_IF(!actor.load(key, obj), "Could not parse actor object.");
   }
   return true;
@@ -79,103 +137,6 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
   auto height = s32(yVal.number());
   sheetSize = {width, height};
 
-  return true;
-
-  #undef FAIL_HEADER
-}
-
-bool StoryScene::loadSprites(json::Schema data) {
-  #define FAIL_HEADER "Could not parse story scene sprites"
-
-  if(!data.hasArrayElement()) {
-    return true;
-  }
-
-  Slice<const json::Object*> spriteCommands{actors.size()};
-  while(data.hasArrayElement()) {
-    auto maybeCommand = data.expectObjectElement();
-    FAIL_IF(!maybeCommand.present(), "Could not find sprite command.");
-    auto maybeSprite = maybeCommand->expectObjectField("sprite"_sv);
-    if(!maybeSprite.present()) {
-      continue;
-    }
-    spriteCommands.push(&maybeSprite->object());
-  }
-
-  Slice<Sprite> spriteData{spriteCommands.size()};
-  for(const auto *command: spriteCommands) {
-    const auto *idVal = command->get("id"_sv);
-    FAIL_IF(idVal == nullptr, "Could not find id for sprite command.");
-    FAIL_IF(!idVal->isString(), "Expected string for sprite command id.");
-    const auto &spriteID = idVal->string();
-    for(auto &sprite: spriteData) {
-      if(sprite.id.view() == spriteID) {
-        goto next;
-      }
-    }
-    spriteData.push({spriteID});
-    next:;
-  }
-
-  sprites = spriteData.view();
-  return true;
-
-  #undef FAIL_HEADER
-}
-
-bool StoryScene::loadBackgrounds(json::Schema data) {
-  #define FAIL_HEADER "Could not parse story scene backgrounds"
-
-  if(!data.hasArrayElement()) {
-    return true;
-  }
-
-  Slice<const json::Object*> backgroundCommands{actors.size()};
-  while(data.hasArrayElement()) {
-    auto maybeCommand = data.expectObjectElement();
-    FAIL_IF(!maybeCommand.present(), "Could not find background command.");
-    auto maybeBackground = maybeCommand->expectObjectField("background"_sv);
-    if(!maybeBackground.present()) {
-      continue;
-    }
-    backgroundCommands.push(&maybeBackground->object());
-  }
-
-  Slice<StringView> backgroundNames{backgroundCommands.size()};
-  Slice<StringView> musicTrackNames{backgroundCommands.size()};
-  for(const auto *command: backgroundCommands) {
-    const auto *imageVal = command->get("image"_sv);
-    if(imageVal != nullptr) {
-      FAIL_IF(!imageVal->isString(), "Expected string for background image.");
-      for(auto &name: backgroundNames) {
-        if(name == imageVal->string()) {
-          goto tryMusic;
-        }
-      }
-      backgroundNames.push(imageVal->string());
-    }
-    tryMusic:
-    const auto *musicVal = command->get("music"_sv);
-    if(musicVal != nullptr) {
-      FAIL_IF(!musicVal->isString(), "Expected string for background music.");
-      for(auto &name: musicTrackNames) {
-        if(name == musicVal->string()) {
-          goto next;
-        }
-      }
-      musicTrackNames.push(musicVal->string());
-    }
-    next:;
-  }
-
-  bgImages = {backgroundNames.size()};
-  for(usize i = 0; i < bgImages.size(); ++i) {
-    bgImages[i] = {backgroundNames[i]};
-  }
-  musicTracks = {musicTrackNames.size()};
-  for(usize i = 0; i < musicTracks.size(); ++i) {
-    musicTracks[i] = {musicTrackNames[i]};
-  }
   return true;
 
   #undef FAIL_HEADER
@@ -235,21 +196,12 @@ bool StoryScene::loadCommands(json::Schema data) {
   #undef FAIL_HEADER
 }
 
-bool SpriteCommand::load(const StoryScene &scene, json::Schema &data) {
+bool SpriteCommand::load(StoryScene &scene, json::Schema &data) {
   #define FAIL_HEADER "Could not parse story scene sprite command"
 
   auto maybeId = data.expectStringField("id"_sv);
   FAIL_IF(!maybeId.present(), "Could not find id for sprite command.");
-
-  const auto &spriteID = *maybeId;
-  usize sprite = 0;
-  for(; sprite < scene.sprites.size(); ++sprite) {
-    if(scene.sprites[sprite].id.view() == spriteID) {
-      break;
-    }
-  }
-  FAIL_IF(sprite == scene.sprites.size(),
-    "Could not find sprite with id {}.", spriteID);
+  id = scene.ensureSprite(*maybeId);
 
   auto maybeHide = data.expectBooleanField("hide"_sv);
   if(maybeHide.present()) {
@@ -257,16 +209,10 @@ bool SpriteCommand::load(const StoryScene &scene, json::Schema &data) {
   }
 
   auto maybeActor = data.expectStringField("actor"_sv);
-  if(maybeActor.present()) {
-    actor = 0;
-    for(; actor < scene.actors.size(); ++actor) {
-      if(scene.actors[actor].id.view() == *maybeActor) {
-        break;
-      }
-    }
-    FAIL_IF(actor == scene.actors.size(),
-      "Could not find actor with id {}.", maybeActor);
-  }
+  FAIL_IF(!maybeActor.present(), "Need actor for sprite command.");
+  actor = scene.ensureActor(*maybeActor);
+  FAIL_IF(actor.empty(), "Could not find actor {}.", *maybeActor);
+  const auto *actorData = scene.getActor(actor);
 
   auto maybePortrait = data.expectArrayField("portrait"_sv);
   if(maybePortrait.present()) {
@@ -277,8 +223,7 @@ bool SpriteCommand::load(const StoryScene &scene, json::Schema &data) {
     FAIL_IF(!maybeY.present(), "Could not find y for portrait.");
     auto portraitX = s32(*maybeX);
     auto portraitY = s32(*maybeY);
-    const auto &actorData = scene.actors[actor];
-    portrait = portraitY * actorData.sheetSize.x + portraitX;
+    portrait = portraitY * actorData->sheetSize.x + portraitX;
   }
 
   auto maybePos = data.expectArrayField("pos"_sv);
@@ -289,7 +234,6 @@ bool SpriteCommand::load(const StoryScene &scene, json::Schema &data) {
     FAIL_IF(!maybeY.present(), "Could not find y for pos.");
     pos = {f32(*maybeX), f32(*maybeY)};
   }
-
 
   auto maybeSize = data.expectArrayField("size"_sv);
   if(maybeSize.present()) {
@@ -305,19 +249,14 @@ bool SpriteCommand::load(const StoryScene &scene, json::Schema &data) {
   #undef FAIL_HEADER
 }
 
-bool SpeakCommand::load(const struct StoryScene &scene, json::Schema &data) {
+bool SpeakCommand::load(struct StoryScene &scene, json::Schema &data) {
   #define FAIL_HEADER "Could not parse story scene speak command"
 
   auto maybeActor = data.expectStringField("actor"_sv);
   FAIL_IF(!maybeActor.present(), "Could not find actor for speak command.");
-  actor = 0;
-  for(; actor < scene.actors.size(); ++actor) {
-    if(scene.actors[actor].id.view() == *maybeActor) {
-      break;
-    }
-  }
-  FAIL_IF(actor == scene.actors.size(), "Could not find actor with id {}.",
-    *maybeActor);
+  actor = scene.ensureActor(*maybeActor);
+  FAIL_IF(actor.empty(), "Could not find actor {}.", *maybeActor);
+  const auto *actorData = scene.getActor(actor);
 
   auto maybeText = data.expectStringField("text"_sv);
   if(maybeText.present()) {
@@ -332,8 +271,7 @@ bool SpeakCommand::load(const struct StoryScene &scene, json::Schema &data) {
     FAIL_IF(!maybeY.present(), "Could not find y for portrait.");
     auto portraitX = s32(*maybeX);
     auto portraitY = s32(*maybeY);
-    const auto &actorData = scene.actors[actor];
-    portrait = portraitY * actorData.sheetSize.x + portraitX;
+    portrait = portraitY * actorData->sheetSize.x + portraitX;
   }
 
   return true;
@@ -353,28 +291,17 @@ bool WaitCommand::load(json::Schema &data) {
   #undef FAIL_HEADER
 }
 
-bool BackgroundCommand::load(const StoryScene &scene, json::Schema &data) {
+bool BackgroundCommand::load(StoryScene &scene, json::Schema &data) {
   #define FAIL_HEADER "Could not parse story scene background command"
 
-  auto maybeImage = data.expectStringField("image"_sv);
-  FAIL_IF(!maybeImage.present(), "Could not find image for background command.");
-  const auto &imageName = *maybeImage;
-  for(image = 0; image < scene.bgImages.size(); ++image) {
-    if(scene.bgImages[image].view() == imageName) {
-      break;
-    }
+  auto maybeBackground = data.expectStringField("background"_sv);
+  if(maybeBackground.present()) {
+    background = scene.ensureBackground(*maybeBackground);
   }
-  FAIL_IF(image == scene.bgImages.size(), "Could not find background with id {}.", imageName);
 
   auto maybeMusic = data.expectStringField("music"_sv);
   if(maybeMusic.present()) {
-    const auto &musicName = *maybeMusic;
-    for(music = 0; music < scene.musicTracks.size(); ++music) {
-      if(scene.musicTracks[music].view() == musicName) {
-        break;
-      }
-    }
-    FAIL_IF(music == scene.musicTracks.size(), "Could not find music with id {}.", musicName);
+    music = scene.ensureMusic(*maybeMusic);
   }
 
   return true;
@@ -390,7 +317,7 @@ json::Object StoryScene::toObject() const {
 }
 
 json::Object StoryScene::actorsObject() const {
-  if(actors.empty()) {
+  if(actors.size() == 0) {
     return {};
   }
   Slice<json::Object::Pair> pairs{actors.size()};
@@ -436,7 +363,7 @@ json::Object Command::toObject(const StoryScene &scene) const {
     pairs.push({"wait"_sv, wait->toObject()});
     break;
   case CommandBackground:
-    pairs.push({"background"_sv, background->toObject(scene)});
+    pairs.push({"background"_sv, background->toObject()});
     break;
   default:
     NWGE_UNREACHABLE("invalid CommandCode");
@@ -446,12 +373,13 @@ json::Object Command::toObject(const StoryScene &scene) const {
 
 json::Object SpriteCommand::toObject(const StoryScene &scene) const {
   json::ObjectBuilder builder;
-  builder.set("sprite"_sv, scene.sprites[sprite].id.view());
-  if(actor >= 0) {
-    builder.set("actor"_sv, scene.actors[actor].id.view());
+  builder.set("sprite"_sv, id);
+  if(!actor.empty()) {
+    builder.set("actor"_sv, actor);
     if(portrait >= 0) {
-      auto portraitX = portrait % scene.actors[actor].sheetSize.x;
-      auto portraitY = portrait / scene.actors[actor].sheetSize.x;
+      const auto *actorData = scene.getActor(actor);
+      auto portraitX = portrait % actorData->sheetSize.x;
+      auto portraitY = portrait / actorData->sheetSize.x;
       builder.array("portrait"_sv)
         .add(f64(portraitX))
         .add(f64(portraitY))
@@ -477,10 +405,11 @@ json::Object SpriteCommand::toObject(const StoryScene &scene) const {
 json::Object SpeakCommand::toObject(const StoryScene &scene) const {
   json::ObjectBuilder builder;
 
-  builder.set("actor"_sv, scene.actors[actor].id.view());
+  builder.set("actor"_sv, actor);
   if(portrait >= 0) {
-    auto portraitX = portrait % scene.actors[actor].sheetSize.x;
-    auto portraitY = portrait / scene.actors[actor].sheetSize.x;
+    const auto *actorData = scene.getActor(actor);
+    auto portraitX = portrait % actorData->sheetSize.x;
+    auto portraitY = portrait / actorData->sheetSize.x;
     builder.array("portrait"_sv)
       .add(f64(portraitX))
       .add(f64(portraitY))
@@ -496,13 +425,13 @@ json::Object WaitCommand::toObject() const {
   return builder.finish();
 }
 
-json::Object BackgroundCommand::toObject(const StoryScene &scene) const {
+json::Object BackgroundCommand::toObject() const {
   json::ObjectBuilder builder;
-  if(image >= 0) {
-    builder.set("image"_sv, scene.bgImages[image].view());
+  if(!background.empty()) {
+    builder.set("background"_sv, background);
   }
-  if(music >= 0) {
-    builder.set("music"_sv, scene.musicTracks[music].view());
+  if(!music.empty()) {
+    builder.set("music"_sv, music);
   }
   return builder.finish();
 }

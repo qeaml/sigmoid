@@ -100,6 +100,46 @@ private:
     }
   }
 
+  void copyStoryCommands() {
+    mCommands = {mScene.story->commands.size()};
+    for(const auto &src: mScene.story->commands) {
+      CommandInfo info{src.code};
+      switch(info.code) {
+      case CommandSprite:
+        safeCopyString(src.sprite->id, info.idBuf);
+        info.shown = !src.sprite->hide;
+        if(src.sprite->pos.x != -1 && src.sprite->pos.y != -1) {
+          info.move = true;
+          info.posX = src.sprite->pos.x;
+          info.posY = src.sprite->pos.y;
+        }
+        if(src.sprite->size.x != -1 && src.sprite->size.y != -1) {
+          info.scale = true;
+          info.sizeX = src.sprite->size.x;
+          info.sizeY = src.sprite->size.y;
+        }
+        safeCopyString(src.sprite->actor, info.actorBuf);
+        info.portraitX = src.sprite->portrait;
+        break;
+      case CommandSpeak:
+        safeCopyString(src.speak->actor, info.actorBuf);
+        info.portraitX = src.speak->portrait;
+        safeCopyString(src.speak->text, info.textBuf);
+        break;
+      case CommandWait:
+        info.waitTime = src.wait->duration;
+        break;
+      case CommandBackground:
+        safeCopyString(src.background->background, info.backgroundBuf);
+        safeCopyString(src.background->music, info.musicBuf);
+        break;
+      default:
+        break;
+      }
+      mCommands.push(info);
+    }
+  }
+
   void copyStoryInfo() {
     if(!mScene.story.present()) {
       return;
@@ -114,6 +154,7 @@ private:
       actorInfo.sheetWidth = src.sheetSize.x;
       actorInfo.sheetHeight = src.sheetSize.y;
     }
+    copyStoryCommands();
   }
 
   void nqLoadSceneInfo() {
@@ -139,10 +180,18 @@ private:
     if(!mScene.story.present()) {
       mScene.story.emplace();
     }
+    setUpStoryActors();
+    setUpStoryCommands();
+  }
+
+  void setUpStoryActors() {
+    mScene.story->actors.clear();
+    if(mActors.size() == 0) {
+      return;
+    }
     mScene.story->actors = {mActors.size()};
-    for(usize i = 0; i < mActors.size(); ++i) {
-      auto &actor = mScene.story->actors[i];
-      const auto &src = mActors[i];
+    for(const auto & src : mActors) {
+      Actor actor;
       actor.id = src.id;
       actor.name = src.nameBuf.data();
       actor.sheet = src.sheetBuf.data();
@@ -150,6 +199,14 @@ private:
         src.sheetWidth,
         src.sheetHeight
       };
+      mScene.story->actors.push(actor);
+    }
+  }
+
+  void setUpStoryCommands() {
+    if(mCommands.size() == 0) {
+      mScene.story->commands = {};
+      return;
     }
     mScene.story->commands = {mCommands.size()};
     for(usize i = 0; i < mCommands.size(); ++i) {
@@ -159,9 +216,24 @@ private:
       switch(src.code) {
       case CommandSprite:
         command.sprite.emplace();
+        command.sprite->id = src.idBuf.data();
+        command.sprite->hide = !src.shown;
+        if(src.move) {
+          command.sprite->pos.x = src.posX;
+          command.sprite->pos.y = src.posY;
+        }
+        if(src.scale) {
+          command.sprite->size.x = src.sizeX;
+          command.sprite->size.y = src.sizeY;
+        }
+        command.sprite->actor = src.actorBuf.data();
+        command.sprite->portrait = src.portraitX;
         break;
       case CommandSpeak:
         command.speak.emplace();
+        command.speak->actor = src.actorBuf.data();
+        command.speak->portrait = src.portraitX;
+        command.speak->text = src.textBuf.data();
         break;
       case CommandWait:
         command.wait.emplace();
@@ -169,10 +241,13 @@ private:
         break;
       case CommandBackground:
         command.background.emplace();
+        command.background->background = src.backgroundBuf.data();
+        command.background->music = src.musicBuf.data();
         break;
       default:
         break;
       }
+      mScene.story->commands[i] = command;
     }
   }
 
@@ -413,8 +488,10 @@ private:
   }
 
   static void backgroundCommandOptions(CommandInfo &info) {
-    ImGui::InputText("Background", info.backgroundBuf.data(), cBufSize);
-    ImGui::InputText("Music", info.musicBuf.data(), cBufSize);
+    ImGui::InputText("Background", info.backgroundBuf.data(), cBufSize,
+      ImGuiInputTextFlags_CharsUppercase);
+    ImGui::InputText("Music", info.musicBuf.data(), cBufSize,
+      ImGuiInputTextFlags_CharsUppercase);
   }
 };
 
