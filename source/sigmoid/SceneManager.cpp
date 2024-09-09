@@ -80,9 +80,10 @@ void SceneManager::window(EditorInfo &info) {
     }
   } else {
     static std::array<char, cBufSize> sNameBuf{};
-    ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize);
+    ImGui::InputText("Scene Name", sNameBuf.data(), cBufSize,
+      ImGuiInputTextFlags_CharsUppercase);
     if(ImGui::Button("Create Story Scene")) {
-      setEditorSubState(sceneEditor(info, sNameBuf.begin()));
+      setEditorSubState(sceneEditor(info, sNameBuf.begin(), SceneStory));
     }
     ImGui::SameLine();
     if(ImGui::Button("Create Field Scene")) {

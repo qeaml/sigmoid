@@ -66,14 +66,14 @@ bool Actor::load(const StringView &actorID, const json::Object &data) {
     "Expected non-empty string for `sheet`.", actorID);
   sheet = sheetVal->string();
 
-  const auto *spritesVal = data.get("sprites"_sv);
-  FAIL_IF(spritesVal == nullptr, "No `sprites` field.", actorID);
-  FAIL_IF(!spritesVal->isArray(), "Expected array for `sprites`.", actorID);
-  auto spriteArr = spritesVal->array();
-  FAIL_IF(spriteArr.size() != 2, "Sprite array must be 2 elements.", actorID);
-  const auto &xVal = spriteArr[0];
+  const auto *sheetSizeVal = data.get("sheetSize"_sv);
+  FAIL_IF(sheetSizeVal == nullptr, "No `sheetSize` field.", actorID);
+  FAIL_IF(!sheetSizeVal->isArray(), "Expected array for `sheetSize`.", actorID);
+  auto sizeArr = sheetSizeVal->array();
+  FAIL_IF(sizeArr.size() != 2, "Sprite array must be 2 elements.", actorID);
+  const auto &xVal = sizeArr[0];
   FAIL_IF(!xVal.isNumber(), "Expected number for sprite array X.", actorID);
-  const auto &yVal = spriteArr[1];
+  const auto &yVal = sizeArr[1];
   FAIL_IF(!yVal.isNumber(), "Expected number for sprite array Y.", actorID);
   auto width = s32(xVal.number());
   auto height = s32(yVal.number());

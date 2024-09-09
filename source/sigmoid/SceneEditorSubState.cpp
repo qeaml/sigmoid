@@ -1,5 +1,7 @@
+#include "StoryScene.hpp"
 #include "imgui/imgui.hpp"
 #include "states.hpp"
+#include <nwge/common/cast.hpp>
 #include <nwge/render/AspectRatio.hpp>
 #include <nwge/render/draw.hpp>
 #include <nwge/render/window.hpp>
@@ -36,8 +38,15 @@ public:
     return true;
   }
 
-  bool tick(f32 delta) override {
+  bool tick([[maybe_unused]] f32 delta) override {
     sceneWindow();
+    switch(mScene.type) {
+    case SceneStory:
+      actorWindow();
+      break;
+    default:
+      break;
+    }
     return true;
   }
 
@@ -81,6 +90,29 @@ private:
     safeCopyString(mScene.background, mBackgroundBuf);
     safeCopyString(mScene.music, mMusicBuf);
     safeCopyString(mScene.next, mNextBuf);
+    switch(mScene.type) {
+    case SceneStory:
+      copyStoryInfo();
+      break;
+    default:
+      break;
+    }
+  }
+
+  void copyStoryInfo() {
+    if(!mScene.story.present()) {
+      return;
+    }
+    mActors.clear();
+    for(const auto & src: mScene.story->actors) {
+      mActors.push({});
+      auto &actorInfo = mActors[mActors.size() - 1];
+       actorInfo.id = src.id;
+      safeCopyString(src.name, actorInfo.nameBuf);
+      safeCopyString(src.sheet, actorInfo.sheetBuf);
+      actorInfo.sheetWidth = src.sheetSize.x;
+      actorInfo.sheetHeight = src.sheetSize.y;
+    }
   }
 
   void nqLoadSceneInfo() {
@@ -92,7 +124,32 @@ private:
     mScene.background = mBackgroundBuf.data();
     mScene.music = mMusicBuf.data();
     mScene.next = mNextBuf.data();
+    switch(mScene.type) {
+    case SceneStory:
+      setUpStoryInfo();
+      break;
+    default:
+      break;
+    }
     mInfo.store.nqSave(mFileName, mScene);
+  }
+
+  void setUpStoryInfo() {
+    if(!mScene.story.present()) {
+      mScene.story.emplace();
+    }
+    mScene.story->actors = {mActors.size()};
+    for(usize i = 0; i < mActors.size(); ++i) {
+      auto &actor = mScene.story->actors[i];
+      const auto &src = mActors[i];
+      actor.id = src.id;
+      actor.name = src.nameBuf.data();
+      actor.sheet = src.sheetBuf.data();
+      actor.sheetSize = {
+        src.sheetWidth,
+        src.sheetHeight
+      };
+    }
   }
 
   render::AspectRatio m1x1{1, 1};
@@ -131,6 +188,67 @@ private:
     ImGui::SameLine();
     if(ImGui::Button("Return")) {
       setEditorSubState(gameInfoEditor(mInfo));
+    }
+
+    ImGui::End();
+  }
+
+  std::array<char, cBufSize> mActorIdBuf{};
+  struct ActorInfo {
+    String<> id;
+    std::array<char, cBufSize> nameBuf{};
+    std::array<char, cBufSize> sheetBuf{};
+    s32 sheetWidth = 1;
+    s32 sheetHeight = 1;
+  };
+  Slice<ActorInfo> mActors{4};
+  ssize mSelectedActor = -1;
+
+  void actorWindow() {
+    if(!ImGui::Begin("Actors", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::End();
+      return;
+    }
+
+    if(ImGui::BeginListBox("##actors")) {
+      for(usize i = 0; i < mActors.size(); ++i) {
+        ActorInfo &actor = mActors[i];
+        auto idx = saturate_cast<ssize>(i);
+        if(ImGui::Selectable(actor.id.begin(), idx == mSelectedActor)) {
+          mSelectedActor = idx;
+        }
+      }
+      ImGui::EndListBox();
+    }
+
+    if(mSelectedActor >= 0) {
+      ActorInfo &actor = mActors[mSelectedActor];
+      ImGui::InputText("Name", actor.nameBuf.data(), cBufSize);
+      ImGui::InputText("Sheet", actor.sheetBuf.data(), cBufSize,
+        ImGuiInputTextFlags_CharsUppercase);
+      ImGui::InputInt("Sheet width", &actor.sheetWidth);
+      ImGui::InputInt("Sheet height", &actor.sheetHeight);
+      if(ImGui::Button("Deselect")) {
+        mSelectedActor = -1;
+      }
+      ImGui::SameLine();
+      if(ImGui::Button("Delete")) {
+        Slice<ActorInfo> newActors(mActors.size() - 1);
+        for(auto &actorInfo: mActors) {
+          if(actor.id.view() != actorInfo.id) {
+            newActors.push(std::move(actorInfo));
+          }
+        }
+        mActors = std::move(newActors);
+      }
+    } else {
+      ImGui::InputText("Actor ID", mActorIdBuf.data(), cBufSize);
+      if(ImGui::Button("Add actor")) {
+        ActorInfo actor;
+        actor.id = mActorIdBuf.data();
+        mActors.push({actor});
+        mSelectedActor = saturate_cast<ssize>(mActors.size()) - 1;
+      }
     }
 
     ImGui::End();
