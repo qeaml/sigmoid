@@ -101,6 +101,10 @@ private:
   }
 
   void copyStoryCommands() {
+    if(mScene.story->commands.empty()) {
+      mCommands.clear();
+      return;
+    }
     mCommands = {mScene.story->commands.size()};
     for(const auto &src: mScene.story->commands) {
       CommandInfo info{src.code};
